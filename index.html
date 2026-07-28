@@ -1,0 +1,2870 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0B0E14" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>El Potrero ⚽ | Simulador de carrera</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #0B0E14; overscroll-behavior: none; }
+  #root { min-height: 100vh; min-height: 100dvh; }
+  /* Layout mobile: una sola columna, relato colapsable abajo */
+  @media (max-width: 760px) {
+    .mgrid { grid-template-columns: 1fr !important; padding: 8px !important; }
+    /* El panel de relato (segundo hijo del grid) queda debajo, más bajito y no pegajoso */
+    .mgrid > div:last-child { position: static !important; max-height: 200px; }
+    .mgrid > div:last-child > div:last-child { max-height: 150px !important; }
+  }
+  /* Botones más cómodos al tacto */
+  @media (hover: none) {
+    button { min-height: 42px; -webkit-tap-highlight-color: transparent; }
+  }
+</style>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script>
+var PotreroApp = (() => {
+  var __defProp = Object.defineProperty;
+  var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+  var __copyProps = (to, from, except, desc) => {
+    if (from && typeof from === "object" || typeof from === "function") {
+      for (let key of __getOwnPropNames(from))
+        if (!__hasOwnProp.call(to, key) && key !== except)
+          __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+    }
+    return to;
+  };
+  var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+  // build.jsx
+  var build_exports = {};
+  __export(build_exports, {
+    default: () => ElPotrero
+  });
+
+  // react-shim.js
+  var React = window.React;
+  var react_shim_default = React;
+  var useState = React.useState;
+  var useEffect = React.useEffect;
+  var useRef = React.useRef;
+  var useCallback = React.useCallback;
+
+  // build.jsx
+  var POSICIONES = {
+    ARQ: { nombre: "Arquero", statsClave: ["reflejos", "salto", "liderazgo"], emoji: "\u{1F9E4}", minis: ["atajada", "memoria", "reflejos", "tateti", "cabeza"] },
+    DEF: { nombre: "Defensor", statsClave: ["marca", "potencia", "liderazgo"], emoji: "\u{1F6E1}\uFE0F", minis: ["cabezazo", "control", "reflejos", "tateti", "ppt", "cabeza", "carril"] },
+    MED: { nombre: "Mediocampista", statsClave: ["pase", "gambeta", "vision"], emoji: "\u{1F3A9}", minis: ["gambeta", "control", "tiro", "secuencia", "tateti", "ppt", "carril"] },
+    DEL: { nombre: "Delantero", statsClave: ["remate", "velocidad", "gambeta"], emoji: "\u26BD", minis: ["penal", "gambeta", "tiro", "cabezazo", "reflejos", "tanda", "ppt", "carril", "cabeza"] }
+  };
+  var STAT_LABELS = {
+    remate: "Remate",
+    gambeta: "Gambeta",
+    pase: "Pase",
+    velocidad: "Velocidad",
+    resistencia: "Resistencia",
+    potencia: "Potencia",
+    vision: "Visi\xF3n",
+    marca: "Marca",
+    reflejos: "Reflejos",
+    salto: "Salto",
+    liderazgo: "Liderazgo",
+    mentalidad: "Mentalidad"
+  };
+  var STAT_KEYS = Object.keys(STAT_LABELS);
+  var CLUBES = {
+    ARG: { liga: "Argentina", cont: "Sudam\xE9rica", d1: [
+      { n: "River Plate", f: 85 },
+      { n: "Boca Juniors", f: 84 },
+      { n: "Racing Club", f: 78 },
+      { n: "Independiente", f: 76 },
+      { n: "San Lorenzo", f: 75 },
+      { n: "V\xE9lez Sarsfield", f: 76 },
+      { n: "Estudiantes LP", f: 77 },
+      { n: "Rosario Central", f: 74 },
+      { n: "Newell's", f: 73 },
+      { n: "Talleres", f: 75 },
+      { n: "Lan\xFAs", f: 72 },
+      { n: "Defensa y Justicia", f: 71 }
+    ], d2: [
+      { n: "Chacarita", f: 58 },
+      { n: "Atlanta", f: 56 },
+      { n: "San Telmo", f: 55 },
+      { n: "Deportivo Mor\xF3n", f: 57 },
+      { n: "Nueva Chicago", f: 56 }
+    ] },
+    ITA: { liga: "Italia", cont: "Europa", d1: [
+      { n: "Inter", f: 88 },
+      { n: "Juventus", f: 87 },
+      { n: "Milan", f: 86 },
+      { n: "Napoli", f: 85 },
+      { n: "Roma", f: 82 },
+      { n: "Lazio", f: 80 },
+      { n: "Atalanta", f: 81 },
+      { n: "Fiorentina", f: 78 },
+      { n: "Bologna", f: 76 },
+      { n: "Torino", f: 74 },
+      { n: "Udinese", f: 72 },
+      { n: "Genoa", f: 71 }
+    ], d2: [
+      { n: "Como", f: 64 },
+      { n: "Palermo", f: 66 },
+      { n: "Sampdoria", f: 68 },
+      { n: "Bari", f: 62 },
+      { n: "Parma", f: 65 }
+    ] },
+    ESP: { liga: "Espa\xF1a", cont: "Europa", d1: [
+      { n: "Real Madrid", f: 92 },
+      { n: "Barcelona", f: 90 },
+      { n: "Atl\xE9tico Madrid", f: 86 },
+      { n: "Sevilla", f: 80 },
+      { n: "Real Sociedad", f: 79 },
+      { n: "Villarreal", f: 79 },
+      { n: "Athletic Club", f: 78 },
+      { n: "Real Betis", f: 77 },
+      { n: "Valencia", f: 76 },
+      { n: "Girona", f: 75 },
+      { n: "Celta de Vigo", f: 72 },
+      { n: "Osasuna", f: 71 }
+    ], d2: [
+      { n: "Levante", f: 63 },
+      { n: "Sporting Gij\xF3n", f: 64 },
+      { n: "Real Zaragoza", f: 65 },
+      { n: "Racing Santander", f: 62 },
+      { n: "Almer\xEDa", f: 66 }
+    ] },
+    ING: { liga: "Inglaterra", cont: "Europa", d1: [
+      { n: "Manchester City", f: 93 },
+      { n: "Arsenal", f: 89 },
+      { n: "Liverpool", f: 89 },
+      { n: "Manchester United", f: 84 },
+      { n: "Chelsea", f: 84 },
+      { n: "Tottenham", f: 82 },
+      { n: "Newcastle", f: 81 },
+      { n: "Aston Villa", f: 80 },
+      { n: "West Ham", f: 76 },
+      { n: "Brighton", f: 75 },
+      { n: "Everton", f: 72 },
+      { n: "Fulham", f: 71 }
+    ], d2: [
+      { n: "Leeds United", f: 68 },
+      { n: "Leicester City", f: 69 },
+      { n: "Southampton", f: 67 },
+      { n: "Norwich City", f: 63 },
+      { n: "Sunderland", f: 64 }
+    ] }
+  };
+  function clubInicial() {
+    return { ...pick(CLUBES.ARG.d2), pais: "ARG", div: 2 };
+  }
+  function buscarClub(pais, div, minF = 0, maxF = 99, excluir = "") {
+    const pool = CLUBES[pais][div === 1 ? "d1" : "d2"].filter((c) => c.f >= minF && c.f <= maxF && c.n !== excluir);
+    if (pool.length === 0) return null;
+    return { ...pick(pool), pais, div };
+  }
+  var RIVALES_NOMBRES = ["Baldassi", "Ferreyra", "Mendoza", "Coco Silva", "Petrov", "Do Santos", "Vidal", "O'Connor"];
+  var SELECCIONES = { Argentina: 90, Uruguay: 82, Brasil: 91, Colombia: 80, Chile: 76, Paraguay: 72 };
+  var STAFF = {
+    manager: {
+      nombre: "Representante",
+      emoji: "\u{1F574}\uFE0F",
+      desc: "M\xE1s plata en contratos, mejores ofertas y protecci\xF3n en crisis. Cobra un % de lo que gan\xE1s. Cada agente tiene su propia honestidad (no la sab\xE9s hasta tratarlo).",
+      niveles: [
+        { lbl: "Sin representante", base: 0, pct: 0, bonusSueldo: 1, bonusOfertas: 0, protegeCrisis: false },
+        { lbl: "Agente novato", base: 0, pct: 0.05, bonusSueldo: 1.08, bonusOfertas: 1, protegeCrisis: false, nota: "Barato, poca espalda." },
+        { lbl: "Agente independiente", base: 1, pct: 0.08, bonusSueldo: 1.28, bonusOfertas: 2, protegeCrisis: true, nota: "Consigue buenos n\xFAmeros." },
+        { lbl: "Agencia establecida", base: 2, pct: 0.1, bonusSueldo: 1.25, bonusOfertas: 1, protegeCrisis: true, nota: "Estructura s\xF3lida." },
+        { lbl: "S\xFAper agente", base: 3, pct: 0.15, bonusSueldo: 1.45, bonusOfertas: 2, protegeCrisis: true, nota: "Caro pero abre cualquier puerta." }
+      ]
+    },
+    trainer: {
+      nombre: "Preparador f\xEDsico",
+      emoji: "\u{1F4AA}",
+      desc: "Baja riesgo de lesi\xF3n y recupera f\xEDsico. Cuota seg\xFAn tu nivel.",
+      niveles: [
+        { lbl: "Ninguno", base: 0, pct: 0, reduceRiesgo: 0, fitBonus: 0, riesgoEstafa: 0 },
+        { lbl: "PF particular", base: 0, pct: 0.04, reduceRiesgo: 8, fitBonus: 5, riesgoEstafa: 0.05 },
+        { lbl: "Equipo m\xE9dico", base: 1, pct: 0.06, reduceRiesgo: 18, fitBonus: 10, riesgoEstafa: 0.02 }
+      ]
+    },
+    psico: {
+      nombre: "Psic\xF3logo deportivo",
+      emoji: "\u{1F9E0}",
+      desc: "Sube moral y mentalidad cada temporada.",
+      niveles: [
+        { lbl: "Ninguno", base: 0, pct: 0, moralBonus: 0, mentBonus: 0, riesgoEstafa: 0 },
+        { lbl: "Sesiones mensuales", base: 0, pct: 0.03, moralBonus: 8, mentBonus: 1, riesgoEstafa: 0.03 },
+        { lbl: "Coach mental full", base: 1, pct: 0.05, moralBonus: 15, mentBonus: 2, riesgoEstafa: 0.02 }
+      ]
+    },
+    nutri: {
+      nombre: "Nutricionista",
+      emoji: "\u{1F957}",
+      desc: "Frena la ca\xEDda f\xEDsica por edad y mejora resistencia.",
+      niveles: [
+        { lbl: "Ninguno", base: 0, pct: 0, antiEdad: 0, resBonus: 0, riesgoEstafa: 0 },
+        { lbl: "Plan b\xE1sico", base: 0, pct: 0.02, antiEdad: 1, resBonus: 1, riesgoEstafa: 0.02 },
+        { lbl: "Nutrici\xF3n de \xE9lite", base: 1, pct: 0.04, antiEdad: 2, resBonus: 2, riesgoEstafa: 0.02 }
+      ]
+    }
+  };
+  function cuotaStaff(niv, sueldo) {
+    return Math.round((niv.base || 0) + (niv.pct || 0) * sueldo);
+  }
+  var INVERSIONES = [
+    {
+      id: "plazo",
+      nombre: "Plazo fijo / renta fija",
+      emoji: "\u{1F3E6}",
+      desc: "Seguro. Rinde poco pero casi nunca pierde.",
+      min: 3,
+      retorno: () => Math.random() < 0.9 ? rndF(1.05, 1.12) : rndF(0.98, 1)
+    },
+    {
+      id: "acciones",
+      nombre: "Acciones / CEDEARs",
+      emoji: "\u{1F4C8}",
+      desc: "Riesgo medio. Puede volar o caer.",
+      min: 5,
+      retorno: () => Math.random() < 0.6 ? rndF(1.1, 1.5) : rndF(0.6, 0.95)
+    },
+    {
+      id: "cripto",
+      nombre: "Cripto",
+      emoji: "\u{1FA99}",
+      desc: "Alto riesgo. Monta\xF1a rusa.",
+      min: 4,
+      retorno: () => Math.random() < 0.45 ? rndF(1.3, 2.5) : rndF(0.3, 0.85)
+    },
+    {
+      id: "negocio",
+      nombre: "Negocio (restaurante, campo)",
+      emoji: "\u{1F37D}\uFE0F",
+      desc: "Muy alto riesgo. Te funde o te multiplica.",
+      min: 8,
+      retorno: () => Math.random() < 0.4 ? rndF(1.5, 3) : rndF(0.1, 0.7)
+    },
+    {
+      id: "inmueble",
+      nombre: "Ladrillos / inmueble",
+      emoji: "\u{1F3E0}",
+      desc: "Estable a largo plazo, protege del riesgo.",
+      min: 10,
+      retorno: () => Math.random() < 0.8 ? rndF(1.08, 1.2) : rndF(0.95, 1)
+    }
+  ];
+  var CONSUMIBLES = [
+    { id: "cabala", nombre: "C\xE1bala del vestuario", emoji: "\u{1F9FF}", costo: 3, desc: "Ritual, camiseta de la suerte. Sube chances de fichaje y de salir campe\xF3n esta temporada." },
+    { id: "botines", nombre: "Botines nuevos de gama alta", emoji: "\u{1F45F}", costo: 4, desc: "M\xE1s precisi\xF3n: sube tus chances de gol esta temporada.", pos: ["DEL", "MED"] },
+    { id: "recovery", nombre: "C\xE1mara hiperb\xE1rica / recovery", emoji: "\u{1F6CC}", costo: 3, desc: "Recuper\xE1s f\xEDsico y baj\xE1s el riesgo de lesi\xF3n esta temporada." },
+    { id: "psicologo_extra", nombre: "Coach mental intensivo", emoji: "\u{1F9D8}", costo: 3, desc: "Blindaje mental: sube moral y mantiene la racha esta temporada." }
+  ];
+  var BOOSTS = [
+    // --- Recurrentes (cuota por temporada, se pueden desafectar) ---
+    {
+      id: "pt_elite",
+      nombre: "Personal trainer de \xE9lite",
+      emoji: "\u{1F3CB}\uFE0F",
+      costo: 8,
+      cuota: 3,
+      unico: false,
+      req: (s) => s.rep >= 45,
+      reqTxt: "Rep 45+",
+      desc: "Sube potencia y velocidad ya. Pero el desgaste acumulado te come la resistencia y el salto con los a\xF1os.",
+      aplicar: (ns, temps) => {
+        ns.stats.potencia = clamp(ns.stats.potencia + 2);
+        ns.stats.velocidad = clamp(ns.stats.velocidad + 1);
+        if (temps >= 3) ns.stats.resistencia = clamp(ns.stats.resistencia - 1);
+        if (temps >= 5) ns.stats.salto = clamp(ns.stats.salto - 1);
+      }
+    },
+    {
+      id: "chef",
+      nombre: "Chef y nutrici\xF3n personalizada",
+      emoji: "\u{1F951}",
+      costo: 7,
+      cuota: 2,
+      unico: false,
+      req: (s) => s.edad >= 26,
+      reqTxt: "26+ a\xF1os",
+      desc: "Frena la ca\xEDda f\xEDsica por edad y sostiene la resistencia. Su efecto crece con el tiempo \u2014 ideal para la veteran\xEDa.",
+      aplicar: (ns, temps) => {
+        ns.stats.resistencia = clamp(ns.stats.resistencia + Math.min(2, 1 + Math.floor(temps / 3)));
+      }
+    },
+    {
+      id: "analista",
+      nombre: "Analista de video personal",
+      emoji: "\u{1F3A5}",
+      costo: 9,
+      cuota: 3,
+      unico: false,
+      req: (s) => s.rep >= 55,
+      reqTxt: "Rep 55+",
+      desc: "Estudi\xE1s rivales: sube visi\xF3n y pase. Pero tanto an\xE1lisis te quita frescura (moral) con el tiempo.",
+      aplicar: (ns, temps) => {
+        ns.stats.vision = clamp(ns.stats.vision + 2);
+        ns.stats.pase = clamp(ns.stats.pase + 1);
+        if (temps >= 4) ns.moral = clamp(ns.moral - 3);
+      }
+    },
+    // --- ÚNICOS (se compran una sola vez, caros, para etapas concretas) ---
+    {
+      id: "coach_liderazgo",
+      nombre: "Mentor de liderazgo",
+      emoji: "\u{1F396}\uFE0F",
+      costo: 14,
+      cuota: 0,
+      unico: true,
+      req: (s) => s.edad >= 23 && s.rep >= 50,
+      reqTxt: "23+ a\xF1os \xB7 Rep 50+",
+      desc: "\xDANICO. Te forma como l\xEDder de plantel. Sube liderazgo (+3) y mentalidad (+2) para siempre. Inversi\xF3n de una vez.",
+      aplicar: (ns) => {
+        ns.stats.liderazgo = clamp(ns.stats.liderazgo + 3);
+        ns.stats.mentalidad = clamp(ns.stats.mentalidad + 2);
+        if (!ns.flags.includes("lider_formado")) ns.flags.push("lider_formado");
+      }
+    },
+    {
+      id: "mejor_manager",
+      nombre: "S\xFAper representante",
+      emoji: "\u{1F4BC}",
+      costo: 22,
+      cuota: 5,
+      unico: true,
+      req: (s) => s.edad >= 27 && s.rep >= 65,
+      reqTxt: "27+ a\xF1os \xB7 Rep 65+",
+      desc: "\xDANICO. Para la madurez: +20% a tus contratos y las mejores ofertas del mercado. Caro, pero cambia tu econom\xEDa.",
+      aplicar: (ns) => {
+        if (!ns.flags.includes("super_manager")) ns.flags.push("super_manager");
+      }
+    },
+    {
+      id: "academia",
+      nombre: "Tu propia academia de f\xFAtbol",
+      emoji: "\u{1F3EB}",
+      costo: 30,
+      cuota: 0,
+      unico: true,
+      req: (s) => s.edad >= 30 && s.titulos + s.titulosInt >= 3,
+      reqTxt: "30+ a\xF1os \xB7 3+ t\xEDtulos",
+      desc: "\xDANICO. Legado fuera de la cancha: fund\xE1s tu academia. Renta pasiva estable y prestigio que suma a tu leyenda.",
+      aplicar: (ns) => {
+        if (!ns.flags.includes("academia")) ns.flags.push("academia");
+        ns.plata += 4;
+      }
+    }
+  ];
+  var TORNEOS = {
+    champions: { nombre: "Champions League", emoji: "\u{1F3C6}", cont: "Europa", partidos: 4, prestigio: 30 },
+    libertadores: { nombre: "Copa Libertadores", emoji: "\u{1F3C6}", cont: "Sudam\xE9rica", partidos: 4, prestigio: 25 },
+    mundialClubes: { nombre: "Mundial de Clubes", emoji: "\u{1F30D}", partidos: 3, prestigio: 20 },
+    mundial: { nombre: "Mundial de Selecciones", emoji: "\u{1F30E}", partidos: 8, prestigio: 50, seleccion: true },
+    copaAmerica: { nombre: "Copa Am\xE9rica", emoji: "\u{1F3C6}", partidos: 5, prestigio: 30, seleccion: true }
+  };
+  var rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+  var rndF = (a, b) => a + Math.random() * (b - a);
+  var pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  var clamp = (v, lo = 0, hi = 99) => Math.max(lo, Math.min(hi, v));
+  function calcMedia(stats, pos) {
+    const clave = POSICIONES[pos].statsClave;
+    const claveProm = clave.reduce((a, k) => a + stats[k], 0) / clave.length;
+    const global = STAT_KEYS.reduce((a, k) => a + stats[k], 0) / STAT_KEYS.length;
+    return Math.round(claveProm * 0.6 + global * 0.4);
+  }
+  function factorEdad(edad, cuidado = 0.5) {
+    if (edad <= 23) return -(23 - edad) * 1.6;
+    if (edad <= 28) return 2 + (edad - 23) * 0.4;
+    const declineBase = (edad - 28) * (edad - 28) * 0.55;
+    const amortiguado = declineBase * (1 - cuidado * 0.65);
+    return 4 - amortiguado;
+  }
+  function nivelCuidado(s) {
+    let c = 0.15;
+    c += (s.staff?.nutri || 0) * 0.15;
+    c += (s.staff?.trainer || 0) * 0.1;
+    c += (s.stats?.mentalidad - 50) / 200;
+    c += s.flags?.includes("profesional") ? 0.12 : 0;
+    c -= s.flags?.includes("fiestero") ? 0.15 : 0;
+    return clamp(c, 0, 1);
+  }
+  function calcMediaEf(s) {
+    const base = calcMedia(s.stats, s.pos);
+    return clamp(Math.round(base + factorEdad(s.edad, nivelCuidado(s))), 20, 99);
+  }
+  function calcLeyenda(s) {
+    const media = calcMedia(s.stats, s.pos);
+    return Math.round(
+      s.golesCarrera * 2 + s.asistCarrera * 1.5 + s.titulos * 15 + s.titulosInt * 40 + s.mundiales * 120 + (s.premios.balonOro || 0) * 100 + (s.premios.puskas || 0) * 20 + (s.premios.botaOro || 0) * 30 + s.selecPartidos * 2 + s.selecGoles * 4 + media * 3 + s.fama + s.hinchada - (s.flags.includes("traidor") ? 50 : 0) - (s.flags.includes("dopaje_positivo") ? 150 : 0)
+    );
+  }
+  var req = {
+    liderazgo: (n) => (s) => s.stats.liderazgo >= n,
+    mentalidad: (n) => (s) => s.stats.mentalidad >= n,
+    rep: (n) => (s) => s.rep >= n,
+    plata: (n) => (s) => s.plata >= n,
+    fama: (n) => (s) => s.fama >= n,
+    hinchada: (n) => (s) => s.hinchada >= n,
+    gambeta: (n) => (s) => s.stats.gambeta >= n
+  };
+  var EVENTOS = [
+    // ---------------- DEPORTIVO ----------------
+    {
+      id: "debut",
+      cat: "deportivo",
+      once: true,
+      peso: 10,
+      cond: (s) => s.temporada === 1 && s.partidosJugados === 0,
+      texto: (s) => `Debut\xE1s de titular en ${s.club.n}. El vestuario te mira: sos el pibe.`,
+      opciones: [
+        { txt: "Pedir la pelota y encarar", ef: { rep: 4, moral: 5, riesgo: 8, stats: { gambeta: 1 } } },
+        { txt: "Jugar simple, no exponerte", ef: { rep: 1, vestuario: 3, stats: { pase: 1 } } },
+        { txt: "Buscar al referente que te gu\xEDe", req: req.liderazgo(52), reqTxt: "Liderazgo", ef: { vestuario: 8, moral: 3 } }
+      ]
+    },
+    {
+      id: "sequia",
+      cat: "deportivo",
+      cooldown: 3,
+      peso: 6,
+      cond: (s) => (s.pos === "DEL" || s.pos === "MED") && s.partidosJugados >= 5 && s.golesTemporada === 0,
+      texto: () => "Varios partidos sin convertir. Se habla de sequ\xEDa.",
+      opciones: [
+        { txt: "Practicar definici\xF3n tras hora (f\xEDsico\u2193 remate\u2191)", ef: { stats: { remate: 2 }, fitness: -5, moral: -2 } },
+        { txt: "Salir a buscarlo con todo", ef: {}, mini: "penal" },
+        { txt: "Confiar en tu talento", req: req.mentalidad(65), reqTxt: "Mentalidad", ef: { moral: 6, stats: { mentalidad: 1 } } }
+      ]
+    },
+    {
+      id: "duelo_rival",
+      cat: "deportivo",
+      cooldown: 2,
+      peso: 7,
+      cond: (s) => s.temporada >= 2,
+      texto: (s) => `Te cruz\xE1s con tu archirrival ${s.rival}, que la rompe. Cara a cara.`,
+      opciones: [
+        { txt: "Demostrar qui\xE9n manda", ef: { rep: 4, riesgo: 10 }, mini: "gambeta" },
+        { txt: "Jugar en equipo", ef: { vestuario: 5, stats: { pase: 1 } } }
+      ]
+    },
+    {
+      id: "clasico",
+      cat: "deportivo",
+      cooldown: 1,
+      peso: 6,
+      cond: (s) => s.div === 1,
+      texto: (s) => `Cl\xE1sico. La hinchada de ${s.club.n}: "Este lo gan\xE1s vos".`,
+      opciones: [
+        { txt: "Prometer gol y buscarlo", ef: { hinchada: 6, riesgo: 10 }, mini: "tiro" },
+        { txt: "Liderar al equipo (favor de l\xEDder)", req: req.liderazgo(70), reqTxt: "Liderazgo", ef: { vestuario: 10, rep: 5, hinchada: 8 } },
+        { txt: "Mantener la calma", ef: { stats: { mentalidad: 1 } } }
+      ]
+    },
+    {
+      id: "record_club",
+      cat: "deportivo",
+      cooldown: 4,
+      peso: 5,
+      cond: (s) => s.golesTemporada >= 12,
+      texto: () => "Est\xE1s a un gol del r\xE9cord hist\xF3rico de goles del club en una temporada.",
+      opciones: [{ txt: "Obsesionarte", ef: { riesgo: 8 }, mini: "tiro" }, { txt: "Priorizar al equipo", ef: { vestuario: 8, stats: { pase: 1 } } }]
+    },
+    // ---------------- VESTUARIO ----------------
+    {
+      id: "asado",
+      cat: "vestuario",
+      cooldown: 3,
+      peso: 5,
+      cond: (s) => s.vestuario < 55,
+      texto: () => "El vestuario est\xE1 fr\xEDo. Se tira la idea de un asado con todo: picada, carne y sobremesa larga.",
+      opciones: [
+        { txt: "Poner la plata y comer como campe\xF3n (\u{1F4B0}-2)", req: req.plata(2), reqTxt: "\u{1F4B0}2", ef: { plata: -2, vestuario: 20, moral: 8, fitness: -10, stats: { resistencia: -1 } } },
+        { txt: "Ir, comer moderado", ef: { vestuario: 8, moral: 3, fitness: -3 } },
+        { txt: "Ir pero cuidarte con la comida", req: req.mentalidad(58), reqTxt: "Mentalidad", ef: { vestuario: 6, stats: { mentalidad: 1 } } },
+        { txt: "No ir, quedarte entrenando", ef: { vestuario: -6, fitness: 5, stats: { resistencia: 1 } } }
+      ]
+    },
+    {
+      id: "capitania",
+      cat: "vestuario",
+      once: true,
+      peso: 8,
+      cond: (s) => s.stats.liderazgo >= 62 && s.temporada >= 3 && s.vestuario >= 60,
+      texto: (s) => `Te ofrecen la cinta de capit\xE1n de ${s.club.n}.`,
+      opciones: [{ txt: "Aceptar", ef: { rep: 8, stats: { liderazgo: 4 }, vestuario: 8, flag: "capitan" } }, { txt: "Rechazar", ef: { moral: -3, vestuario: -5 } }]
+    },
+    {
+      id: "joven_promesa",
+      cat: "vestuario",
+      cooldown: 4,
+      peso: 4,
+      cond: (s) => s.edad >= 28,
+      texto: () => "Un pibe de inferiores juega en tu puesto y la rompe.",
+      opciones: [
+        { txt: "Ser su mentor", ef: { vestuario: 10, stats: { liderazgo: 2 }, moral: 3 } },
+        { txt: "Ignorarlo, es competencia", ef: { vestuario: -5, moral: -2 } },
+        { txt: "Redoblar entrenamiento (f\xEDsico\u2191)", ef: { stats: { resistencia: 2, potencia: 1 }, fitness: -6 } }
+      ]
+    },
+    // ---------------- PRENSA ----------------
+    {
+      id: "conferencia",
+      cat: "prensa",
+      cooldown: 2,
+      peso: 5,
+      cond: (s) => s.rep >= 55,
+      texto: () => "Un periodista te tira una pregunta con mala leche sobre el t\xE9cnico.",
+      opciones: [
+        { txt: "Bancar al t\xE9cnico", ef: { vestuario: 10, rep: 2 } },
+        { txt: "Indirecta filosa (fama\u2191 vestuario\u2193)", ef: { fama: 8, vestuario: -15, rep: 4 } },
+        { txt: "Diplomacia", req: req.mentalidad(60), reqTxt: "Mentalidad", ef: { rep: 3, stats: { mentalidad: 1 } } }
+      ]
+    },
+    {
+      id: "renovacion",
+      cat: "prensa",
+      cooldown: 3,
+      peso: 6,
+      cond: (s) => s.temporada >= 2 && s.rep >= 60,
+      texto: (s) => `${s.club.n} quiere renovarte. Hay que negociar.`,
+      opciones: [
+        { txt: "Aceptar lo que ofrecen", ef: { vestuario: 5, sueldoUp: 2 } },
+        { txt: "Exigir mejora fuerte", req: req.rep(70), reqTxt: "Reputaci\xF3n", ef: { sueldoUp: 5, hinchada: -3 } },
+        { txt: "Poner cl\xE1usula de salida", ef: { sueldoUp: 3, flag: "clausula" } }
+      ]
+    },
+    // ---------------- FAMA (nuevo) ----------------
+    {
+      id: "sponsor",
+      cat: "fama",
+      cooldown: 2,
+      peso: 5,
+      cond: (s) => s.rep >= 60 || s.fama >= 40,
+      texto: () => "Una marca deportiva te ofrece ser su cara publicitaria.",
+      opciones: [
+        { txt: "Firmar (\u{1F4B0}+ fama+)", ef: { plata: 6, fama: 10 } },
+        { txt: "Negociar por m\xE1s", req: req.fama(55), reqTxt: "Fama", ef: { plata: 12, fama: 6 } },
+        { txt: "Rechazar, sin distracciones", ef: { stats: { mentalidad: 2 } } }
+      ]
+    },
+    {
+      id: "publicidad_tv",
+      cat: "fama",
+      cooldown: 3,
+      peso: 4,
+      cond: (s) => s.fama >= 30,
+      texto: () => "Te invitan a un programa de TV muy visto. Exposici\xF3n enorme.",
+      opciones: [
+        { txt: "Ir y mostrarte carism\xE1tico", ef: { fama: 15, moral: 4 } },
+        { txt: "Ir serio y medido", ef: { fama: 6, rep: 2 } },
+        { txt: "No ir, cuidar tu imagen deportiva", ef: { rep: 3, fama: -2 } }
+      ]
+    },
+    {
+      id: "escandalo",
+      cat: "fama",
+      cooldown: 4,
+      peso: 3,
+      cond: (s) => s.fama >= 55,
+      texto: () => "Sale un esc\xE1ndalo medi\xE1tico sobre tu vida privada.",
+      opciones: [
+        { txt: "Enfrentarlo de cara", ef: { fama: 5, moral: -4 } },
+        { txt: "Contratar prensa para taparlo (\u{1F4B0}-3)", req: req.plata(3), reqTxt: "\u{1F4B0}3", ef: { plata: -3, fama: -2, rep: 2 } },
+        { txt: "Ignorar y jugar", req: req.mentalidad(62), reqTxt: "Mentalidad", ef: { stats: { mentalidad: 1 } } }
+      ]
+    },
+    {
+      id: "influencer",
+      cat: "fama",
+      cooldown: 3,
+      peso: 3,
+      cond: (s) => s.fama >= 45 && s.edad <= 28,
+      texto: () => "Pod\xE9s armar tu propia marca de ropa / redes. Es negocio y fama.",
+      opciones: [
+        { txt: "Meterle fichas (\u{1F4B0}-4, fama\u2191\u2191)", req: req.plata(4), reqTxt: "\u{1F4B0}4", ef: { plata: -4, fama: 20 } },
+        { txt: "Solo redes, sin invertir", ef: { fama: 8 } }
+      ]
+    },
+    // ---------------- GASTO (nuevo) ----------------
+    {
+      id: "auto_lujo",
+      cat: "gasto",
+      cooldown: 4,
+      peso: 3,
+      cond: (s) => s.plata >= 6 && s.edad <= 30,
+      texto: () => "Pod\xE9s darte el gusto de un auto de lujo. Moral y fama, pero se va plata.",
+      opciones: [
+        { txt: "Comprarlo (\u{1F4B0}-6, moral+ fama+)", req: req.plata(6), reqTxt: "\u{1F4B0}6", ef: { plata: -6, moral: 10, fama: 8 } },
+        { txt: "Algo m\xE1s modesto (\u{1F4B0}-2)", req: req.plata(2), reqTxt: "\u{1F4B0}2", ef: { plata: -2, moral: 4 } },
+        { txt: "Ahorrar, no es momento", ef: { stats: { mentalidad: 1 } } }
+      ]
+    },
+    {
+      id: "casa_familia",
+      cat: "gasto",
+      once: true,
+      peso: 4,
+      cond: (s) => s.plata >= 8 && s.temporada >= 3,
+      texto: () => "Pod\xE9s comprarle la casa a tu familia. Un sue\xF1o del barrio.",
+      opciones: [
+        { txt: "Comprarla (\u{1F4B0}-8, moral++)", req: req.plata(8), reqTxt: "\u{1F4B0}8", ef: { plata: -8, moral: 20, hinchada: 5, flag: "familiero" } },
+        { txt: "Todav\xEDa no puedo", ef: { moral: -4 } }
+      ]
+    },
+    {
+      id: "obra_barrio",
+      cat: "gasto",
+      cooldown: 5,
+      peso: 3,
+      cond: (s) => s.plata >= 5 && s.hinchada >= 50,
+      texto: () => "Pod\xE9s financiar un play\xF3n deportivo en tu potrero de origen.",
+      opciones: [
+        { txt: "Financiarlo (\u{1F4B0}-5, hinchada++ fama+)", req: req.plata(5), reqTxt: "\u{1F4B0}5", ef: { plata: -5, hinchada: 15, fama: 8, flag: "benefactor" } },
+        { txt: "Otra vez ser\xE1", ef: {} }
+      ]
+    },
+    {
+      id: "imprevisto",
+      cat: "gasto",
+      cooldown: 4,
+      peso: 3,
+      cond: (s) => s.temporada >= 2,
+      texto: () => "Un gasto imprevisto grande te golpea (impuestos, un mal negocio de un amigo).",
+      opciones: [
+        { txt: "Pagar y seguir (\u{1F4B0}-4)", req: req.plata(4), reqTxt: "\u{1F4B0}4", ef: { plata: -4 } },
+        { txt: "Pagar lo que puedas (\u{1F4B0}-1, moral-)", ef: { plata: -1, moral: -5 } }
+      ]
+    },
+    // ---------------- PERSONAL ----------------
+    {
+      id: "joda",
+      cat: "personal",
+      cooldown: 5,
+      peso: 3,
+      cond: (s) => s.edad <= 25,
+      texto: () => "Tus amigos te invitan a una previa un jueves. El s\xE1bado hay partido.",
+      opciones: [
+        { txt: "Ir un rato y volver temprano", ef: { moral: 6, fitness: -6, riesgo: 6 } },
+        { txt: "Quedarte a entrenar (f\xEDsico\u2191 mentalidad\u2191)", ef: { fitness: 4, stats: { resistencia: 1, mentalidad: 1 } } },
+        { txt: "Ir con todo, sos joven", ef: { moral: 12, fitness: -20, rep: -3, riesgo: 15 } }
+      ]
+    },
+    {
+      id: "estudios",
+      cat: "personal",
+      cooldown: 6,
+      peso: 3,
+      cond: (s) => s.edad <= 26,
+      texto: () => "Podr\xEDas arrancar a estudiar para el d\xEDa de ma\xF1ana.",
+      opciones: [
+        { txt: "Estudiar (mentalidad\u2191\u2191)", ef: { stats: { mentalidad: 3 }, fitness: -4 } },
+        { txt: "Full f\xFAtbol", ef: { stats: { resistencia: 1 } } }
+      ]
+    },
+    // ---------------- MEMORIA DE CLUBES (nuevo) ----------------
+    {
+      id: "volver_idolo",
+      cat: "memoria",
+      cooldown: 3,
+      peso: 5,
+      cond: (s) => s.exClubes.some((c) => c.idolo && c.n !== s.club.n) && s.div === 1,
+      texto: (s) => {
+        const ex = s.exClubes.find((c) => c.idolo && c.n !== s.club.n);
+        return `${ex.n}, donde fuiste \xEDdolo, te tiende la mano para volver. La hinchada te reclama.`;
+      },
+      opciones: [
+        { txt: "Emocionarte con la idea", ef: { moral: 10, flag: "quiere_volver" } },
+        { txt: "Sos profesional, evalu\xE1s fr\xEDamente", req: req.mentalidad(65), reqTxt: "Mentalidad", ef: { stats: { mentalidad: 1 } } }
+      ]
+    },
+    {
+      id: "revancha_traicion",
+      cat: "memoria",
+      cooldown: 3,
+      peso: 4,
+      cond: (s) => s.flags.includes("traidor") && s.div === 1,
+      texto: (s) => `Te toca enfrentar a un club que sent\xEDs que traicionaste. La hinchada te va a putear todo el partido.`,
+      opciones: [
+        { txt: "Callarlos con un golazo", ef: { riesgo: 8 }, mini: "tiro" },
+        { txt: "Aguantar el chaparr\xF3n con temple", req: req.mentalidad(68), reqTxt: "Mentalidad", ef: { stats: { mentalidad: 2 }, rep: 3 } }
+      ]
+    },
+    {
+      id: "reencuentro_rival",
+      cat: "memoria",
+      cooldown: 4,
+      peso: 3,
+      cond: (s) => s.temporada >= 4,
+      texto: (s) => `Despu\xE9s de a\xF1os, te reencontr\xE1s con ${s.rival} en la misma cancha. Ya son veteranos.`,
+      opciones: [
+        { txt: "Camiseta cambiada, respeto mutuo", ef: { moral: 6, stats: { liderazgo: 1 } } },
+        { txt: "La rivalidad sigue intacta", ef: {}, mini: "gambeta" }
+      ]
+    },
+    // ---------------- SUERTE ----------------
+    {
+      id: "ojeador_italia",
+      cat: "suerte",
+      once: true,
+      peso: 4,
+      cond: (s) => s.div === 2 && s.pais === "ARG" && s.temporada >= 2 && s.rep >= 45,
+      texto: () => "Un ojeador italiano te vio de casualidad. Hay inter\xE9s de un club de Serie B.",
+      opciones: [{ txt: "Ilusionarte", ef: { moral: 10, flag: "en_carpeta_ita" } }, { txt: "Pies en la tierra", ef: { stats: { mentalidad: 2 } } }]
+    },
+    {
+      id: "lesion_ajena",
+      cat: "suerte",
+      cooldown: 4,
+      peso: 4,
+      cond: (s) => s.partidosJugados <= 4 && s.rep < 65,
+      texto: () => "El titular de tu puesto se lesiona. Se abre la puerta.",
+      opciones: [{ txt: "Aprovechar al m\xE1ximo", ef: { rep: 8, moral: 8, riesgo: 6 } }, { txt: "Rendir tranquilo", req: req.mentalidad(58), reqTxt: "Mentalidad", ef: { rep: 5, moral: 5 } }]
+    },
+    {
+      id: "golazo_viral",
+      cat: "suerte",
+      cooldown: 5,
+      peso: 3,
+      cond: (s) => s.golesTemporada >= 4,
+      texto: () => "Met\xE9s un golazo de otro planeta que se hace viral mundialmente.",
+      opciones: [{ txt: "Disfrutar la fama", ef: { rep: 8, fama: 15, moral: 8 } }]
+    },
+    {
+      id: "tecnico_odia",
+      cat: "suerte",
+      cooldown: 4,
+      peso: 4,
+      cond: (s) => s.temporada >= 2,
+      texto: () => "Llega un t\xE9cnico que no te quiere. Al banco.",
+      opciones: [
+        { txt: "Cabeza baja, entrenar el doble (f\xEDsico\u2191)", ef: { stats: { resistencia: 2, mentalidad: 1 }, fitness: -8, moral: -5 } },
+        { txt: "Plantarte", req: req.rep(65), reqTxt: "Reputaci\xF3n", ef: { rep: 2, vestuario: -4, moral: 3 } },
+        { txt: "Pedir salir", ef: { flag: "quiere_irse", moral: -3 } }
+      ]
+    },
+    // ---------------- CRISIS ----------------
+    {
+      id: "bajon",
+      cat: "crisis",
+      cooldown: 3,
+      peso: 6,
+      cond: (s) => s.moral < 35,
+      texto: () => "Mala racha, perdiste confianza.",
+      opciones: [
+        { txt: "Ayuda profesional", ef: { moral: 18, stats: { mentalidad: 2 } } },
+        { txt: "Salir solo a pura garra", req: req.mentalidad(60), reqTxt: "Mentalidad", ef: { moral: 12, stats: { mentalidad: 1 } } },
+        { txt: "Aislarte", ef: { moral: 4, vestuario: -4 } }
+      ]
+    },
+    {
+      id: "lesion_larga",
+      cat: "crisis",
+      cooldown: 5,
+      peso: 5,
+      cond: (s) => s.fitness < 55,
+      texto: () => "Lesi\xF3n seria, varios meses afuera.",
+      opciones: [
+        { txt: "Recuperaci\xF3n completa", ef: { fitness: 30, moral: -8, stats: { mentalidad: 2 } } },
+        { txt: "Volver antes de tiempo", ef: { fitness: 10, rep: 3, riesgo: 30 } }
+      ]
+    },
+    // ---------------- NEGOCIOS CON DESTINO (gastás y puede salir bien o mal) ----------------
+    {
+      id: "neg_restaurante",
+      cat: "gasto",
+      cooldown: 3,
+      peso: 5,
+      cond: (s) => s.plata >= 8 && s.fama >= 25,
+      texto: () => "Un socio te ofrece poner un restaurante con tu nombre. Suena bien, pero el rubro es picante.",
+      opciones: [
+        {
+          txt: "Invertir fuerte (\u{1F4B0}-8)",
+          req: req.plata(8),
+          reqTxt: "\u{1F4B0}8",
+          ef: { plata: -8 },
+          resolver: (ns) => {
+            const r = Math.random();
+            if (r < 0.35) {
+              const g = rnd(14, 26);
+              ns.plata += g;
+              ns.fama = clamp(ns.fama + 8);
+              return `\u{1F37D}\uFE0F\u2705 \xA1El restaurante es un \xE9xito! Gan\xE1s \u{1F4B0}${g} y suma fama.`;
+            }
+            if (r < 0.6) {
+              const g = rnd(6, 10);
+              ns.plata += g;
+              return `\u{1F37D}\uFE0F El restaurante anda, recuper\xE1s \u{1F4B0}${g}.`;
+            }
+            ns.moral = clamp(ns.moral - 6);
+            return `\u{1F37D}\uFE0F\u274C El restaurante fundi\xF3. Perdiste todo lo puesto.`;
+          }
+        },
+        {
+          txt: "Entrar de a poco (\u{1F4B0}-3)",
+          req: req.plata(3),
+          reqTxt: "\u{1F4B0}3",
+          ef: { plata: -3 },
+          resolver: (ns) => {
+            const r = Math.random();
+            if (r < 0.5) {
+              const g = rnd(4, 8);
+              ns.plata += g;
+              return `\u{1F37D}\uFE0F Negocio chico pero rinde: +\u{1F4B0}${g}.`;
+            }
+            return `\u{1F37D}\uFE0F No prosper\xF3, perdiste lo puesto.`;
+          }
+        },
+        { txt: "No, mejor cuido la plata", ef: { stats: { mentalidad: 1 } } }
+      ]
+    },
+    {
+      id: "neg_campo",
+      cat: "gasto",
+      cooldown: 4,
+      peso: 4,
+      cond: (s) => s.plata >= 12,
+      texto: () => "Te ofrecen meterte en un campo / agro. Estable, pero necesita capital.",
+      opciones: [
+        {
+          txt: "Comprar tierras (\u{1F4B0}-12)",
+          req: req.plata(12),
+          reqTxt: "\u{1F4B0}12",
+          ef: { plata: -12, flag: "estanciero" },
+          resolver: (ns) => {
+            const r = Math.random();
+            if (r < 0.7) {
+              const g2 = rnd(14, 20);
+              ns.plata += g2;
+              return `\u{1F33E}\u2705 Buena cosecha: +\u{1F4B0}${g2}. Renta que se sostiene.`;
+            }
+            const g = rnd(4, 8);
+            ns.plata += g;
+            return `\u{1F33E} A\xF1o flojo, apenas recuper\xE1s \u{1F4B0}${g}.`;
+          }
+        },
+        { txt: "Paso", ef: {} }
+      ]
+    },
+    {
+      id: "neg_cripto_amigo",
+      cat: "gasto",
+      cooldown: 3,
+      peso: 4,
+      cond: (s) => s.plata >= 5,
+      texto: () => "Un amigo te tira un 'dato seguro' de una cripto que va a explotar. Est\xE1 euf\xF3rico.",
+      opciones: [
+        {
+          txt: "Meter todo lo que puedas (\u{1F4B0}-6)",
+          req: req.plata(6),
+          reqTxt: "\u{1F4B0}6",
+          ef: { plata: -6 },
+          resolver: (ns) => {
+            const r = Math.random();
+            if (r < 0.3) {
+              const g = rnd(18, 40);
+              ns.plata += g;
+              ns.fama = clamp(ns.fama + 3);
+              return `\u{1FA99}\u{1F680} \xA1Se fue a la luna! Gan\xE1s \u{1F4B0}${g}. Sos un genio.`;
+            }
+            if (r < 0.45) {
+              const g = rnd(6, 9);
+              ns.plata += g;
+              return `\u{1FA99} Sac\xE1s una tajada: +\u{1F4B0}${g}.`;
+            }
+            ns.moral = clamp(ns.moral - 5);
+            return `\u{1FA99}\u{1F480} Era una estafa. Perdiste todo. Tu amigo desapareci\xF3.`;
+          }
+        },
+        { txt: "Ni en pedo", ef: { stats: { mentalidad: 1 } } }
+      ]
+    },
+    // ---------------- SUSTANCIAS / DOPING (ilegal, con penalidad real) ----------------
+    {
+      id: "doping_oferta",
+      cat: "crisis",
+      cooldown: 4,
+      peso: 4,
+      cond: (s) => s.edad >= 24 && (s.fitness < 60 || s.moral < 45 || s.stats.mentalidad < 55),
+      texto: () => "Un 'preparador' turbio te ofrece una ayudita qu\xEDmica para rendir m\xE1s. Es ilegal y lo sab\xE9s.",
+      opciones: [
+        {
+          txt: "Inyectarte para el pr\xF3ximo tramo (boost, riesgo)",
+          ef: { flag: "dopado" },
+          resolver: (ns) => {
+            ns.dopingTemp = true;
+            ns.dopingUsos = (ns.dopingUsos || 0) + 1;
+            ns.fitness = clamp(ns.fitness + 15);
+            return `\u{1F489} Te la das. Vas a rendir m\xE1s un tiempo... pero si te agarran, se pudre todo.`;
+          }
+        },
+        { txt: "Rechazar, no vale la pena", ef: { stats: { mentalidad: 2 }, moral: 3 } },
+        { txt: "Denunciar al tipo (rep+ fama+)", ef: { rep: 4, fama: 6, stats: { mentalidad: 1 } } }
+      ]
+    },
+    {
+      id: "doping_presion",
+      cat: "crisis",
+      cooldown: 5,
+      peso: 3,
+      cond: (s) => s.edad >= 30 && calcMedia(s.stats, s.pos) < 80 && s.rep >= 55,
+      texto: () => "Sent\xEDs que el cuerpo no da como antes. La tentaci\xF3n de 'ayudarte' vuelve, m\xE1s fuerte.",
+      opciones: [
+        {
+          txt: "Recurrir a la qu\xEDmica (boost, riesgo alto)",
+          ef: { flag: "dopado" },
+          resolver: (ns) => {
+            ns.dopingTemp = true;
+            ns.dopingUsos = (ns.dopingUsos || 0) + 1;
+            ns.fitness = clamp(ns.fitness + 18);
+            return `\u{1F489} Otra vez al ruedo con ayuda. El cuerpo responde, pero jug\xE1s con fuego.`;
+          }
+        },
+        { txt: "Aceptar el paso del tiempo con dignidad", ef: { stats: { mentalidad: 3 }, moral: 4 } }
+      ]
+    },
+    // ---------------- EVENTOS DE FÚTBOL (caóticos, con doble filo) ----------------
+    {
+      id: "apurada_hinchada",
+      cat: "vestuario",
+      cooldown: 3,
+      peso: 6,
+      cond: (s) => s.hinchada < 45 && s.temporada >= 2,
+      texto: (s) => `La barra de ${s.club.n} va al predio a "apurar" al plantel tras una mala racha. Clima denso.`,
+      opciones: [
+        { txt: "Dar la cara y bancar los trapos", ef: { hinchada: 15, rep: 3, moral: -4 } },
+        { txt: "Esconderte con el resto", ef: { hinchada: -10, vestuario: 5, moral: -3 } },
+        { txt: "Encarar al jefe de la barra (arriesgado)", req: req.mentalidad(65), reqTxt: "Mentalidad", ef: { hinchada: 20, fama: 5, riesgo: 8, stats: { liderazgo: 1 } } }
+      ]
+    },
+    {
+      id: "pica_vestuario",
+      cat: "vestuario",
+      cooldown: 3,
+      peso: 6,
+      cond: (s) => s.vestuario < 50,
+      texto: () => "Se arma una pica fuerte en el vestuario: dos referentes casi se van a las manos y el grupo se parte.",
+      opciones: [
+        { txt: "Poner pa\xF1os fr\xEDos y mediar", req: req.liderazgo(60), reqTxt: "Liderazgo", ef: { vestuario: 18, stats: { liderazgo: 2 } } },
+        { txt: "Tomar partido por uno", ef: { vestuario: -8, moral: 3 } },
+        { txt: "No meterte, no es tu quilombo", ef: { vestuario: -3, stats: { mentalidad: 1 } } }
+      ]
+    },
+    {
+      id: "pisada_penal",
+      cat: "deportivo",
+      cooldown: 4,
+      peso: 5,
+      cond: (s) => s.pos !== "ARQ" && s.div === 1,
+      texto: () => "Penal en el \xFAltimo minuto, partido clave. El pateador habitual te mira: \xBFla agarr\xE1s vos?",
+      opciones: [
+        { txt: "Agarrar la pelota y patear", ef: { riesgo: 5 }, mini: "penal" },
+        { txt: "Dej\xE1rsela al especialista", ef: { vestuario: 4 } },
+        { txt: "Picarla como Panenka (locura total)", req: req.mentalidad(70), reqTxt: "Mentalidad", ef: {}, mini: "ppt" }
+      ]
+    },
+    {
+      id: "bicicleta_dt",
+      cat: "deportivo",
+      cooldown: 3,
+      peso: 5,
+      cond: (s) => s.temporada >= 2 && s.moral < 55,
+      texto: () => "El t\xE9cnico te tira una indirecta en la conferencia sobre tu 'falta de compromiso'. Los pibes lo comentan.",
+      opciones: [
+        { txt: "Responderle con goles, callado", ef: { moral: -3, stats: { mentalidad: 2 } } },
+        { txt: "Ir al frente y hablarlo en privado", req: req.liderazgo(58), reqTxt: "Liderazgo", ef: { vestuario: 8, rep: 2 } },
+        { txt: "Filtrar tu bronca a la prensa", ef: { fama: 8, vestuario: -12, rep: -3 } }
+      ]
+    },
+    {
+      id: "gesto_hincha",
+      cat: "fama",
+      cooldown: 4,
+      peso: 4,
+      cond: (s) => s.hinchada >= 55,
+      texto: () => "Un nene con tu camiseta te espera afuera del predio cada d\xEDa. Hoy te lo cruz\xE1s de frente.",
+      opciones: [
+        { txt: "Regalarle tu camiseta y una foto", ef: { hinchada: 10, fama: 6, moral: 6 } },
+        { txt: "Saludarlo r\xE1pido, ten\xE9s apuro", ef: { moral: 2 } },
+        { txt: "Invitarlo a ver un entrenamiento (\u{1F4B0}-1)", req: req.plata(1), reqTxt: "\u{1F4B0}1", ef: { plata: -1, hinchada: 15, fama: 10, flag: "querido" } }
+      ]
+    },
+    {
+      id: "superclasico",
+      cat: "deportivo",
+      cooldown: 2,
+      peso: 6,
+      cond: (s) => s.div === 1 && s.rep >= 55,
+      texto: (s) => `Supercl\xE1sico. Toda la semana de tensi\xF3n, la ciudad parada. La gente de ${s.club.n} te lo pide de rodillas.`,
+      opciones: [
+        { txt: "Prometer que la romp\xE9s y salir a comerte la cancha", ef: { riesgo: 12, hinchada: 8 }, mini: "gambeta" },
+        { txt: "Jugar concentrado, sin cabeza caliente", req: req.mentalidad(62), reqTxt: "Mentalidad", ef: { rep: 4, stats: { mentalidad: 1 } } },
+        { txt: "Tirar toda la carne al asador (tanda mental)", ef: { riesgo: 8 }, mini: "tateti" }
+      ]
+    },
+    {
+      id: "lesion_dudosa",
+      cat: "deportivo",
+      cooldown: 3,
+      peso: 5,
+      cond: (s) => s.fitness < 65 && s.div === 1,
+      texto: () => "Sent\xEDs una molestia muscular pero hay partido decisivo. El cuerpo m\xE9dico duda.",
+      opciones: [
+        { txt: "Jugar infiltrado, sea como sea", ef: { riesgo: 25, rep: 4, moral: 4, fitness: -8 } },
+        { txt: "Parar y cuidarte (te perd\xE9s el partido)", ef: { fitness: 15, vestuario: -5, moral: -4 } },
+        { txt: "Pedir opini\xF3n de tu PF", req: (s) => s.staff.trainer > 0, reqTxt: "Tener PF", ef: { fitness: 8, riesgo: -5 } }
+      ]
+    },
+    {
+      id: "oferta_arabe",
+      cat: "suerte",
+      cooldown: 5,
+      peso: 3,
+      cond: (s) => s.rep >= 65 && s.edad >= 28,
+      texto: () => "Un club \xE1rabe te ofrece una fortuna. El triple de sueldo, pero lejos del f\xFAtbol top y de los reflectores.",
+      opciones: [
+        { txt: "Ir por la plata (\u{1F4B0}++, rep/fama\u2193)", ef: { plata: 20, sueldoUp: 8, rep: -8, fama: -6, flag: "petrodolares" } },
+        { txt: "Rechazar, todav\xEDa quer\xE9s gloria", ef: { moral: 5, rep: 3, stats: { mentalidad: 1 } } }
+      ]
+    },
+    {
+      id: "viral_malo",
+      cat: "fama",
+      cooldown: 4,
+      peso: 3,
+      cond: (s) => s.fama >= 40,
+      texto: () => "Un video tuyo fuera de contexto se hace viral y te bardean en todos lados. Mala prensa.",
+      opciones: [
+        { txt: "Salir a aclarar con humor", req: req.mentalidad(58), reqTxt: "Mentalidad", ef: { fama: 5, moral: 2 } },
+        { txt: "Bancar el temporal en silencio", ef: { fama: -3, moral: -5, stats: { mentalidad: 1 } } },
+        { txt: "Contratar prensa para limpiar la imagen (\u{1F4B0}-3)", req: req.plata(3), reqTxt: "\u{1F4B0}3", ef: { plata: -3, fama: 3, rep: 2 } }
+      ]
+    },
+    {
+      id: "rulo_tecnico",
+      cat: "deportivo",
+      cooldown: 4,
+      peso: 4,
+      cond: (s) => s.temporada >= 3,
+      texto: () => "Cambian al t\xE9cnico y el nuevo te quiere de l\xEDder del proyecto. Confianza total, pero m\xE1s presi\xF3n.",
+      opciones: [
+        { txt: "Aceptar el rol de estandarte", ef: { rep: 6, stats: { liderazgo: 2 }, moral: 5 } },
+        { txt: "Pedir bajar el perfil", ef: { moral: 3, rep: -2 } }
+      ]
+    }
+  ];
+  var EVENTOS_OFFSEASON = [
+    {
+      id: "off_vacaciones",
+      texto: () => "Vacaciones de fin de temporada. \xBFC\xF3mo las pas\xE1s?",
+      opciones: [
+        { txt: "Descanso total (moral\u2191 f\xEDsico\u2191)", ef: { moral: 10, fitness: 10 } },
+        { txt: "Entrenar por tu cuenta (f\xEDsico\u2191\u2191 mentalidad\u2191)", ef: { fitness: 5, stats: { resistencia: 2, mentalidad: 1 } } },
+        { txt: "Gira de fama y eventos (fama\u2191 f\xEDsico\u2193)", ef: { fama: 12, fitness: -8 } }
+      ]
+    },
+    {
+      id: "off_pretemporada_dura",
+      texto: () => "El club hace una pretemporada dur\xEDsima en la altura.",
+      opciones: [
+        { txt: "Romperte entrenando (f\xEDsico\u2191\u2191)", ef: { stats: { resistencia: 3, potencia: 1 }, fitness: -5 } },
+        { txt: "Dosificar para no lesionarte", ef: { fitness: 8, riesgo: -5 } }
+      ]
+    },
+    {
+      id: "off_amistoso_intl",
+      texto: () => "Gira de amistosos internacionales de pretemporada.",
+      opciones: [
+        { txt: "Lucirte ante el mundo", ef: { fama: 8, rep: 3, riesgo: 5 } },
+        { txt: "Jugar tranquilo", ef: { stats: { pase: 1 } } }
+      ]
+    },
+    {
+      id: "off_rumores",
+      texto: () => "El mercado hierve con rumores sobre tu futuro.",
+      opciones: [
+        { txt: "Alimentar los rumores (fama\u2191)", ef: { fama: 10, vestuario: -5 } },
+        { txt: "Frenarlos, enfocado en el club", ef: { vestuario: 8, rep: 2 } }
+      ]
+    }
+  ];
+  function ElPotreroGame() {
+    const [fase, setFase] = useState("intro");
+    const [state, setState] = useState(null);
+    const [evento, setEvento] = useState(null);
+    const [log, setLog] = useState([]);
+    const [miniActivo, setMiniActivo] = useState(null);
+    const [ofertas, setOfertas] = useState([]);
+    const [ptPuntos, setPtPuntos] = useState(0);
+    const [torneoActivo, setTorneoActivo] = useState(null);
+    const [notifCola, setNotifCola] = useState([]);
+    const notif = notifCola[0] || null;
+    function notificar(emoji, titulo, sub, tipo = "auto", color) {
+      setNotifCola((q) => [...q, { emoji, titulo, sub, tipo, color, id: Date.now() + Math.random() }]);
+    }
+    function notiSiguiente() {
+      setNotifCola((q) => q.slice(1));
+    }
+    const notifOnEmpty = useRef(null);
+    useEffect(() => {
+      if (notif && notif.tipo === "auto") {
+        const t = setTimeout(() => notiSiguiente(), 3600);
+        return () => clearTimeout(t);
+      }
+      if (notifCola.length === 0 && notifOnEmpty.current) {
+        const cb = notifOnEmpty.current;
+        notifOnEmpty.current = null;
+        setTimeout(cb, 200);
+      }
+    }, [notifCola]);
+    const logEnd = useRef(null);
+    useEffect(() => {
+      try {
+        logEnd.current?.scrollIntoView?.({ behavior: "smooth" });
+      } catch {
+      }
+    }, [log]);
+    const [nombre, setNombre] = useState("");
+    const [pos, setPos] = useState("DEL");
+    const [pais, setPais] = useState("Argentina");
+    function pushLog(...lines) {
+      setLog((l) => [...l, ...lines]);
+    }
+    function hito(ns, txt) {
+      ns.hitos.push(`T${ns.temporada}: ${txt}`);
+    }
+    function nuevoJugador() {
+      const roll = Math.random();
+      let potencial;
+      if (roll < 0.5) potencial = rnd(55, 72);
+      else if (roll < 0.82) potencial = rnd(72, 84);
+      else if (roll < 0.96) potencial = rnd(84, 92);
+      else potencial = rnd(92, 99);
+      const arranqueExtra = Math.round((potencial - 55) / 5);
+      const base = {};
+      STAT_KEYS.forEach((k) => base[k] = rnd(42, 54) + arranqueExtra);
+      POSICIONES[pos].statsClave.forEach((k) => base[k] = clamp(base[k] + rnd(8, 14)));
+      STAT_KEYS.forEach((k) => base[k] = clamp(base[k]));
+      const club = clubInicial();
+      const s = {
+        nombre: nombre.trim() || "Pibe del Potrero",
+        pos,
+        pais,
+        nacion: pais,
+        edad: 16,
+        temporada: 1,
+        club,
+        div: club.div,
+        stats: base,
+        potencial,
+        // techo oculto
+        rep: 30,
+        moral: 60,
+        fitness: 90,
+        hinchada: 40,
+        vestuario: 45,
+        fama: 10,
+        plata: 1,
+        sueldo: 1,
+        golesTemporada: 0,
+        asistTemporada: 0,
+        golesCarrera: 0,
+        asistCarrera: 0,
+        minutosTemp: 0,
+        // afecta retiro
+        titulos: 0,
+        titulosInt: 0,
+        mundiales: 0,
+        partidosJugados: 0,
+        partidosCarrera: 0,
+        selecPartidos: 0,
+        selecGoles: 0,
+        enSeleccion: false,
+        premios: {},
+        // {balonOro: n, puskas: n, ...}
+        flags: [],
+        riesgoLesion: 5,
+        rival: pick(RIVALES_NOMBRES),
+        rivalGoles: 0,
+        cooldowns: {},
+        vistos: [],
+        eventosTemporada: 0,
+        cupoTemporada: rnd(3, 4),
+        staff: { manager: 0, trainer: 0, psico: 0, nutri: 0 },
+        inversiones: [],
+        // {id, monto}
+        exClubes: [],
+        // {n, pais, div, idolo, traicion}
+        sinTitulos: 0,
+        // temporadas seguidas sin salir campeón (crisis institucional)
+        hitos: [],
+        // registro narrativo
+        racha: 0,
+        // forma: >0 caliente, <0 fría
+        nemesis: { nombre: pick(RIVALES_NOMBRES), balones: 0, nivel: rnd(80, 88) },
+        // el otro crack que compite por el Balón de Oro
+        apodo: "",
+        // se gana según tu estilo
+        dopingTemp: false,
+        dopingUsos: 0,
+        // sustancias: boost temporal + contador de riesgo
+        vinculos: {},
+        // { "River Plate": {n, pais, puntos, nivel}, ... } lazo con cada club
+        clubDesdeTemp: 1,
+        // en qué temporada llegaste al club actual (para calcular vínculo)
+        boosts: {},
+        // boosts fijos activos: { pt_elite: {tempsActivo}, ... }
+        consumibles: {},
+        // cábala/botines de la temporada actual: { cabala: true, botines: true }
+        deuda: 0,
+        // plata que debés (se paga con interés al fin de temporada)
+        statsBase: null,
+        // snapshot para calcular desgaste de boosts (se setea abajo)
+        // "chanta" oculta de cada agente que contrates: prob. de estafa aleatoria (no la sabés de antemano)
+        chanta: { manager: rndF(0.02, 0.35), trainer: rndF(0.01, 0.12), psico: rndF(0.01, 0.1), nutri: rndF(0.01, 0.08) }
+      };
+      s.statsBase = { ...base };
+      s.vinculos[club.n] = { n: club.n, pais: club.pais, puntos: 0, nivel: "jugador", debut: true };
+      setState(s);
+      setLog([`\u{1F331} Arranc\xE1s a los 16 en ${club.n} (${CLUBES[club.pais].liga} \xB7 2\xAA).`]);
+      setFase("bienvenida");
+    }
+    function empezarCarrera() {
+      setFase("jugando");
+      setTimeout(() => dispararEvento(state), 300);
+    }
+    const elegibles = useCallback((s) => EVENTOS.filter((e) => {
+      if (e.once && s.vistos.includes(e.id)) return false;
+      if (s.cooldowns[e.id] && s.cooldowns[e.id] > s.temporada) return false;
+      try {
+        return e.cond(s);
+      } catch {
+        return false;
+      }
+    }), []);
+    function dispararEvento(s) {
+      if (s.eventosTemporada >= s.cupoTemporada) {
+        avanzarPartido(s);
+        return;
+      }
+      const pool = elegibles(s);
+      if (pool.length === 0) {
+        avanzarPartido(s);
+        return;
+      }
+      const total = pool.reduce((a, e) => a + (e.peso || 3), 0);
+      let r = Math.random() * total, ev = pool[0];
+      for (const e of pool) {
+        r -= e.peso || 3;
+        if (r <= 0) {
+          ev = e;
+          break;
+        }
+      }
+      setEvento(ev);
+    }
+    const opcionesVisibles = (ev, s) => ev.opciones.filter((op) => !op.req || op.req(s));
+    function aplicarEfectos(s, ef) {
+      const ns = structuredClone(s);
+      if (ef.stats) for (const k in ef.stats) ns.stats[k] = clamp(ns.stats[k] + ef.stats[k]);
+      if (ef.rep) ns.rep = clamp(ns.rep + ef.rep);
+      if (ef.moral) ns.moral = clamp(ns.moral + ef.moral);
+      if (ef.fitness) ns.fitness = clamp(ns.fitness + ef.fitness);
+      if (ef.hinchada) ns.hinchada = clamp(ns.hinchada + ef.hinchada);
+      if (ef.vestuario) ns.vestuario = clamp(ns.vestuario + ef.vestuario);
+      if (ef.fama) ns.fama = clamp(ns.fama + ef.fama);
+      if (ef.plata) ns.plata = Math.max(0, ns.plata + ef.plata);
+      if (ef.sueldoUp) ns.sueldo += ef.sueldoUp;
+      if (ef.riesgo) ns.riesgoLesion = clamp(ns.riesgoLesion + ef.riesgo, 0, 100);
+      if (ef.flag && !ns.flags.includes(ef.flag)) ns.flags.push(ef.flag);
+      return ns;
+    }
+    function elegirOpcion(op) {
+      let ns = aplicarEfectos(state, op.ef || {});
+      ns.eventosTemporada += 1;
+      if (evento.once) ns.vistos = [...ns.vistos, evento.id];
+      if (evento.cooldown) ns.cooldowns = { ...ns.cooldowns, [evento.id]: ns.temporada + evento.cooldown };
+      if (op.mini) {
+        setState(ns);
+        lanzarMinijuego(op.mini, (exito) => {
+          const ns2 = resolverMini(ns, op.mini, exito);
+          setEvento(null);
+          continuarTrasEvento(ns2);
+        });
+        return;
+      }
+      pushLog(`\u27A4 ${op.txt}. ${resumenEfecto(op.ef || {})}`);
+      if (op.resolver) {
+        const msg = op.resolver(ns);
+        if (msg) pushLog(msg);
+      }
+      setEvento(null);
+      continuarTrasEvento(ns);
+    }
+    function continuarTrasEvento(ns) {
+      const redRiesgo = STAFF.trainer.niveles[ns.staff.trainer].reduceRiesgo;
+      const riesgoEf = Math.max(0, ns.riesgoLesion - redRiesgo);
+      if (Math.random() * 100 < riesgoEf * 0.28) {
+        const sem = rnd(2, 8);
+        ns = aplicarEfectos(ns, { fitness: -rnd(10, 22), moral: -6, riesgo: -ns.riesgoLesion + 5 });
+        pushLog(`\u{1F691} \xA1Lesi\xF3n! Te perd\xE9s ${sem} semanas.`);
+      }
+      setState(ns);
+      if (ns.eventosTemporada < ns.cupoTemporada && Math.random() < 0.45 && elegibles(ns).length > 0) setTimeout(() => dispararEvento(ns), 300);
+      else setTimeout(() => avanzarPartido(ns), 300);
+    }
+    function avanzarPartido(s) {
+      let ns = structuredClone(s);
+      const media = calcMediaEf(ns);
+      const formaMod = (ns.moral - 50) / 40 + (ns.fitness - 60) / 60;
+      const rachaMod = (ns.racha || 0) * 3;
+      const mentMod = (ns.stats.mentalidad - 60) / 8;
+      const dopingMod = ns.dopingTemp ? 10 : 0;
+      const botinesMod = ns.consumibles && ns.consumibles.botines ? 6 : 0;
+      const azar = rnd(-8, 8);
+      const rendimiento = clamp(media + azar + formaMod * 8 + rachaMod + mentMod + dopingMod + botinesMod, 20, 99);
+      const jugaTitular = ns.fitness > 45 && rendimiento > 40;
+      ns.minutosTemp += jugaTitular ? rnd(70, 90) : rnd(10, 45);
+      let goles = 0, asist = 0;
+      if (ns.pos === "DEL") {
+        goles = Math.random() < rendimiento / 130 ? rnd(1, 3) : Math.random() < 0.28 ? 1 : 0;
+        asist = Math.random() < 0.22 ? 1 : 0;
+      } else if (ns.pos === "MED") {
+        goles = Math.random() < rendimiento / 200 ? 1 : 0;
+        asist = Math.random() < rendimiento / 120 ? rnd(1, 2) : 0;
+      } else if (ns.pos === "DEF") {
+        goles = Math.random() < 0.07 ? 1 : 0;
+        asist = Math.random() < 0.12 ? 1 : 0;
+      } else {
+        goles = 0;
+        asist = Math.random() < 0.05 ? 1 : 0;
+      }
+      ns.golesTemporada += goles;
+      ns.asistTemporada += asist;
+      ns.golesCarrera += goles;
+      ns.asistCarrera += asist;
+      ns.partidosJugados += 1;
+      ns.partidosCarrera += 1;
+      ns.fitness = clamp(ns.fitness - rnd(3, 7));
+      ns.riesgoLesion = clamp(ns.riesgoLesion + rnd(-2, 4), 0, 100);
+      if (Math.random() < 0.4) ns.rivalGoles += rnd(1, 2);
+      let msg = `\u26BD Fecha ${ns.partidosJugados}: `;
+      if (goles > 0) {
+        msg += `${goles} gol${goles > 1 ? "es" : ""}! `;
+        ns.rep = clamp(ns.rep + goles * 2);
+        ns.moral = clamp(ns.moral + goles * 3);
+        ns.hinchada = clamp(ns.hinchada + goles * 2);
+        ns.fama = clamp(ns.fama + goles);
+      }
+      if (asist > 0) {
+        msg += `${asist} asist. `;
+        ns.rep = clamp(ns.rep + asist);
+      }
+      if (goles === 0 && asist === 0) msg += rendimiento > 60 ? "Buen partido. " : "Partido flojo. ";
+      if (goles > 0 || asist > 0 || rendimiento > 70) ns.racha = clamp((ns.racha || 0) + 1, -3, 4);
+      else if (rendimiento < 45) ns.racha = clamp((ns.racha || 0) - 1, -3, 4);
+      if (ns.racha >= 3) msg += "\u{1F525} \xA1En llamas!";
+      else if (ns.racha <= -2) msg += "\u{1F976} En baj\xF3n.";
+      pushLog(msg);
+      setState(ns);
+      if (ns.partidosJugados >= 10) setTimeout(() => finTemporada(ns), 500);
+      else setTimeout(() => dispararEvento(ns), 500);
+    }
+    function finTemporada(s) {
+      let ns = structuredClone(s);
+      const media = calcMediaEf(ns);
+      const cabala = ns.consumibles && ns.consumibles.cabala ? 8 : 0;
+      const chanceTitulo = clamp((ns.club.f - 70) * 1.2 + (media - 65) + ns.golesTemporada + cabala, 3, 85);
+      const ganoTitulo = Math.random() * 100 < chanceTitulo;
+      const posTabla = ganoTitulo ? 1 : rnd(2, 20);
+      if (ganoTitulo) {
+        ns.titulos += 1;
+        ns.rep = clamp(ns.rep + 6);
+        ns.hinchada = clamp(ns.hinchada + 8);
+        ns.moral = clamp(ns.moral + 8);
+        ns.sinTitulos = 0;
+        hito(ns, `Campe\xF3n con ${ns.club.n} \u{1F3C6}`);
+      } else ns.sinTitulos += 1;
+      pushLog(
+        `\u2501\u2501\u2501 \u{1F3C1} Fin temporada ${ns.temporada} \u2501\u2501\u2501`,
+        `${ns.golesTemporada}G / ${ns.asistTemporada}A \xB7 ${Math.round(ns.minutosTemp)} min.` + (ganoTitulo ? ` \u{1F3C6} \xA1CAMPE\xD3N!` : ` (${posTabla}\xBA)`)
+      );
+      evaluarPremios(ns, media);
+      asignarApodo(ns, media);
+      actualizarVinculo(ns, ganoTitulo);
+      const resultados = [];
+      const bonusMgr = STAFF.manager.niveles[ns.staff.manager].bonusSueldo * (ns.flags.includes("super_manager") ? 1.2 : 1);
+      const cobro = Math.round(ns.sueldo * bonusMgr);
+      ns.plata += cobro;
+      const cuotasStaff = Object.entries(ns.staff).reduce((a, [t, niv]) => a + cuotaStaff(STAFF[t].niveles[niv], ns.sueldo), 0);
+      const cuotasBoosts = Object.keys(ns.boosts || {}).reduce((a, id) => {
+        const c = BOOSTS.find((x) => x.id === id);
+        return a + (c ? c.cuota : 0);
+      }, 0);
+      const costoVida = Math.round(1 + ns.sueldo * 0.12 + ns.fama * 0.05);
+      const egresos = cuotasStaff + cuotasBoosts + costoVida;
+      ns.plata = Math.max(0, ns.plata - egresos);
+      pushLog(`\u{1F4B0} Sueldo +${cobro} \xB7 Staff/boosts -${cuotasStaff + cuotasBoosts} \xB7 Tren de vida -${costoVida} \xB7 Caja: ${ns.plata}`);
+      resultados.push({ emoji: "\u{1F4B0}", titulo: `Balance: \u{1F4B0}${ns.plata}`, sub: `Cobraste +${cobro} \xB7 gastaste -${egresos} (staff, boosts y tren de vida)`, color: `linear-gradient(135deg,#3a7d5a,#1e4d38)` });
+      if (ns.deuda > 0) {
+        const interes = Math.ceil(ns.deuda * 0.2);
+        const totalDeuda = ns.deuda + interes;
+        if (ns.plata >= totalDeuda) {
+          ns.plata -= totalDeuda;
+          pushLog(`\u{1F3E6} Pagaste tu deuda de \u{1F4B0}${ns.deuda} + inter\xE9s \u{1F4B0}${interes}.`);
+          resultados.push({ emoji: "\u{1F3E6}", titulo: "Deuda saldada", sub: `Devolviste \u{1F4B0}${totalDeuda} (con \u{1F4B0}${interes} de inter\xE9s). Libre de deudas.`, color: `linear-gradient(135deg,#3a7d5a,#1e4d38)` });
+          ns.deuda = 0;
+        } else {
+          ns.plata = Math.max(0, ns.plata);
+          ns.deuda = totalDeuda - ns.plata;
+          const pagado = ns.plata;
+          ns.plata = 0;
+          ns.moral = clamp(ns.moral - 8);
+          pushLog(`\u{1F3E6} No cubriste la deuda. Pagaste \u{1F4B0}${pagado}, te queda deber \u{1F4B0}${ns.deuda} (sigue sumando inter\xE9s).`);
+          resultados.push({ emoji: "\u26A0\uFE0F", titulo: "Deuda impaga", sub: `Deb\xE9s \u{1F4B0}${ns.deuda} y sigue creciendo. La presi\xF3n te baja la moral.`, color: `linear-gradient(135deg,#8a3a3a,#4d1e1e)` });
+        }
+      }
+      Object.entries(ns.staff).forEach(([t, niv]) => {
+        if (niv === 0) return;
+        const chanta = ns.chanta && ns.chanta[t] || 0;
+        if (chanta && Math.random() < chanta) {
+          const robo = Math.max(1, Math.round((ns.plata + 5) * rndF(0.1, 0.3)));
+          ns.plata = Math.max(0, ns.plata - robo);
+          ns.moral = clamp(ns.moral - 8);
+          pushLog(`\u{1F6A8} \xA1Te estaf\xF3 tu ${STAFF[t].nombre.toLowerCase()}! Se qued\xF3 con \u{1F4B0}${robo}.`);
+          hito(ns, `Te estaf\xF3 tu ${STAFF[t].nombre.toLowerCase()} \u{1F6A8}`);
+          resultados.push({ emoji: "\u{1F6A8}", titulo: "\xA1Te estafaron!", sub: `Tu ${STAFF[t].nombre.toLowerCase()} te chore\xF3 \u{1F4B0}${robo}. Bronca total.`, color: `linear-gradient(135deg,#8a3a3a,#4d1e1e)` });
+        }
+      });
+      if (ns.inversiones.length > 0) {
+        let totalRet = 0;
+        ns.inversiones.forEach((inv) => {
+          const cfg = INVERSIONES.find((i) => i.id === inv.id);
+          const factor = cfg.retorno();
+          const nuevo = Math.round(inv.monto * factor);
+          totalRet += nuevo;
+          const dif = nuevo - inv.monto;
+          pushLog(`${cfg.emoji} ${cfg.nombre}: ${inv.monto} \u2192 ${nuevo} (${dif >= 0 ? "+" : ""}${dif})`);
+          const gano = dif >= 0;
+          resultados.push({ emoji: cfg.emoji, titulo: gano ? `${cfg.nombre}: \xA1ganancia!` : `${cfg.nombre}: p\xE9rdida`, sub: `Pusiste \u{1F4B0}${inv.monto}, recuper\xE1s \u{1F4B0}${nuevo} (${dif >= 0 ? "+" : ""}${dif}).`, color: gano ? `linear-gradient(135deg,#3a7d5a,#1e4d38)` : `linear-gradient(135deg,#8a3a3a,#4d1e1e)` });
+        });
+        ns.plata += totalRet;
+        ns.inversiones = [];
+      }
+      if (ns.dopingTemp || ns.flags.includes("dopado")) {
+        const riesgoControl = 0.18 + (ns.dopingUsos || 0) * 0.06;
+        if (Math.random() < riesgoControl) {
+          const multa = Math.max(2, Math.round(ns.sueldo * rndF(0.4, 0.9)));
+          ns.plata = Math.max(0, ns.plata - multa);
+          ns.rep = clamp(ns.rep - 20);
+          ns.fama = clamp(ns.fama - 10);
+          ns.moral = clamp(ns.moral - 15);
+          ns.hinchada = clamp(ns.hinchada - 15);
+          if (!ns.flags.includes("dopaje_positivo")) ns.flags.push("dopaje_positivo");
+          pushLog(`\u{1F6A8}\u{1F48A} \xA1DIO POSITIVO EN EL CONTROL ANTIDOPING! Suspensi\xF3n, multa de \u{1F4B0}${multa} y un manch\xF3n en tu legado que no se borra.`);
+          hito(ns, "Suspendido por dopaje \u{1F48A}\u{1F6A8}");
+          resultados.push({ emoji: "\u{1F48A}", titulo: "\xA1POSITIVO ANTIDOPING!", sub: `Suspensi\xF3n + multa \u{1F4B0}${multa}. Mancha permanente en tu legado.`, color: `linear-gradient(135deg,#8a3a3a,#4d1e1e)` });
+        } else if (ns.dopingTemp) {
+          pushLog(`\u{1F489} Zafaste del control esta vez. La pr\xF3xima puede no ser igual.`);
+          resultados.push({ emoji: "\u{1F489}", titulo: "Zafaste del control", sub: "Diste negativo esta vez. Pero segu\xEDs jugando con fuego.", color: `linear-gradient(135deg,#8a7a2a,#4d451e)` });
+        }
+        ns.dopingTemp = false;
+        ns.flags = ns.flags.filter((f) => f !== "dopado");
+      }
+      const psico = STAFF.psico.niveles[ns.staff.psico];
+      if (psico.moralBonus) {
+        ns.moral = clamp(ns.moral + psico.moralBonus);
+        ns.stats.mentalidad = clamp(ns.stats.mentalidad + psico.mentBonus);
+      }
+      const tr = STAFF.trainer.niveles[ns.staff.trainer];
+      const nu = STAFF.nutri.niveles[ns.staff.nutri];
+      ns.fitness = clamp(ns.fitness + 30 + tr.fitBonus);
+      if (ns.consumibles && ns.consumibles.recovery) {
+        ns.fitness = clamp(ns.fitness + 12);
+        ns.riesgoLesion = clamp(ns.riesgoLesion - 15, 0, 100);
+      }
+      if (ns.consumibles && ns.consumibles.psicologo_extra) {
+        ns.moral = clamp(ns.moral + 12);
+        ns.racha = Math.max(ns.racha || 0, 1);
+      }
+      if (nu.resBonus) ns.stats.resistencia = clamp(ns.stats.resistencia + nu.resBonus);
+      if (ns.hinchada >= 75 && !ns.exClubes.some((c) => c.n === ns.club.n && c.idolo)) {
+        ns._idoloActual = true;
+      }
+      const jugoMucho = ns.minutosTemp >= 450;
+      const jugoPoco = ns.minutosTemp < 200;
+      const cuidado = nivelCuidado(ns);
+      ns.temporada += 1;
+      ns.edad += 1;
+      ns.golesTemporada = 0;
+      ns.asistTemporada = 0;
+      ns.partidosJugados = 0;
+      ns.minutosTemp = 0;
+      ns.eventosTemporada = 0;
+      ns.cupoTemporada = rnd(3, 4);
+      const media0 = calcMedia(ns.stats, ns.pos);
+      const techo = ns.potencial || 75;
+      if (ns.edad <= 24) {
+        const gap = techo - media0;
+        if (gap > 0 && jugoMucho) {
+          const sube = POSICIONES[ns.pos].statsClave;
+          const fuerza = Math.max(1, Math.round(gap / 8));
+          sube.forEach((k) => {
+            if (Math.random() < 0.7) ns.stats[k] = clamp(ns.stats[k] + rnd(1, 1 + fuerza));
+          });
+          if (Math.random() < 0.5) {
+            const k = pick(STAT_KEYS);
+            ns.stats[k] = clamp(ns.stats[k] + rnd(1, fuerza));
+          }
+        } else if (jugoPoco) {
+          if (Math.random() < 0.4) {
+            const k = pick(STAT_KEYS);
+            ns.stats[k] = clamp(ns.stats[k] + 1);
+          }
+        }
+      } else if (ns.edad <= 28) {
+        if (media0 < techo && jugoMucho && Math.random() < 0.6) {
+          const k = pick(POSICIONES[ns.pos].statsClave);
+          ns.stats[k] = clamp(ns.stats[k] + 1);
+        }
+      } else if (ns.edad >= 30) {
+        const fisicos = ["velocidad", "resistencia", "potencia", "salto"];
+        const severidad = (ns.edad - 29) * (1 - cuidado * 0.7);
+        fisicos.forEach((k) => {
+          if (Math.random() < 0.5 + (ns.edad - 30) * 0.05) ns.stats[k] = clamp(ns.stats[k] - Math.max(0, Math.round(rnd(1, 2) * severidad)));
+        });
+        if (Math.random() < 0.45) {
+          const k = pick(["vision", "pase", "mentalidad", "liderazgo"]);
+          ns.stats[k] = clamp(ns.stats[k] + 1);
+        }
+      }
+      Object.entries(ns.boosts || {}).forEach(([id, b]) => {
+        const cfg = BOOSTS.find((x) => x.id === id);
+        if (!cfg) return;
+        b.temps = (b.temps || 0) + 1;
+        cfg.aplicar(ns, b.temps);
+      });
+      ns.consumibles = {};
+      setState(ns);
+      const continuar = () => {
+        if (debeRetirarse(ns)) {
+          setTimeout(() => setFase("fin"), 400);
+          return;
+        }
+        const torneo = sorteoTorneo(ns);
+        if (torneo) {
+          setTimeout(() => iniciarTorneo(ns, torneo), 400);
+          return;
+        }
+        setTimeout(() => chequearSeleccion(ns), 400);
+      };
+      if (resultados.length > 0) {
+        resultados.forEach((r) => notificar(r.emoji, r.titulo, r.sub, "push", r.color));
+        notifOnEmpty.current = continuar;
+      } else {
+        continuar();
+      }
+    }
+    function evaluarPremios(ns, media) {
+      if (ns.pos === "DEL" && ns.golesTemporada >= 18) {
+        ns.premios.botaOro = (ns.premios.botaOro || 0) + 1;
+        ns.fama = clamp(ns.fama + 15);
+        pushLog(`\u{1F45F} \xA1Gan\xE1s la BOTA DE ORO!`);
+        hito(ns, "Bota de Oro \u{1F45F}");
+        notificar("\u{1F45F}", "\xA1BOTA DE ORO!", `${ns.golesTemporada} goles, m\xE1ximo goleador`);
+      }
+      if (media >= 82 && ns.golesTemporada + ns.asistTemporada >= 15) {
+        ns.premios.mejorLiga = (ns.premios.mejorLiga || 0) + 1;
+        ns.fama = clamp(ns.fama + 10);
+        pushLog(`\u2B50 \xA1Mejor Jugador de la Liga!`);
+        hito(ns, "Mejor de la Liga \u2B50");
+        notificar("\u2B50", "MEJOR DE LA LIGA", "La rompiste toda la temporada");
+      }
+      const chanceBO = (media - 85) * 3 + ns.titulosInt * 10 + ns.mundiales * 25 + ns.fama / 5;
+      const ganasteBO = media >= 86 && Math.random() * 100 < chanceBO;
+      if (ganasteBO) {
+        ns.premios.balonOro = (ns.premios.balonOro || 0) + 1;
+        ns.fama = clamp(ns.fama + 25);
+        ns.rep = clamp(ns.rep + 10);
+        pushLog(`\u{1F3C5}\u{1F3C5} \xA1GAN\xC1S EL BAL\xD3N DE ORO! Le gan\xE1s la pulseada a ${ns.nemesis.nombre}. \u{1F3C5}\u{1F3C5}`);
+        hito(ns, "BAL\xD3N DE ORO \u{1F3C5}");
+        notificar("\u{1F3C5}", "\xA1BAL\xD3N DE ORO!", `El mejor del mundo (${ns.premios.balonOro}\xBA) \xB7 le gan\xE1s a ${ns.nemesis.nombre}`);
+      } else if (ns.nemesis) {
+        const chanceNemesis = (ns.nemesis.nivel - 85) * 3 + 15;
+        if (Math.random() * 100 < chanceNemesis) {
+          ns.nemesis.balones += 1;
+          ns.nemesis.nivel = clamp(ns.nemesis.nivel + 1, 80, 95);
+          if (media >= 84) {
+            ns.moral = clamp(ns.moral - 6);
+            pushLog(`\u{1F624} Tu n\xE9mesis ${ns.nemesis.nombre} se lleva el Bal\xF3n de Oro (${ns.nemesis.balones}). Te quema.`);
+          }
+        }
+      }
+      if (ns.flags.includes("golazo_viral_temp")) {
+        ns.premios.puskas = (ns.premios.puskas || 0) + 1;
+        pushLog(`\u26BD \xA1Premio Pusk\xE1s al mejor gol!`);
+        hito(ns, "Premio Pusk\xE1s \u26BD");
+        notificar("\u26BD", "\xA1PREMIO PUSK\xC1S!", "Al gol m\xE1s lindo del a\xF1o");
+        ns.flags = ns.flags.filter((f) => f !== "golazo_viral_temp");
+      }
+    }
+    function asignarApodo(ns, media) {
+      const cand = [
+        [10, "La M\xE1quina", () => (ns.premios.balonOro || 0) >= 3],
+        [9, "El Extraterrestre", () => media >= 90],
+        [8, "El Comandante", () => ns.mundiales >= 1],
+        [7, "El Killer", () => ns.pos === "DEL" && ns.golesCarrera >= 150],
+        [7, "El Mago", () => ns.pos === "MED" && ns.asistCarrera >= 90],
+        [7, "El Muro", () => (ns.pos === "DEF" || ns.pos === "ARQ") && ns.titulos >= 5],
+        [6, "El Crack del Barrio", () => (ns.premios.botaOro || 0) >= 1],
+        [5, "El Capit\xE1n", () => ns.flags.includes("capitan")],
+        [5, "El \xCDdolo", () => ns.exClubes.some((c) => c.idolo) || ns.hinchada >= 80],
+        [4, "El Pibe de Oro", () => ns.edad <= 22 && media >= 82],
+        [3, "El Trotamundos", () => ns.flags.includes("europeo")],
+        [2, "La Joya", () => media >= 75 && ns.edad <= 24]
+      ];
+      let mejor = null, prio = -1;
+      for (const [p, apodo, cond] of cand) {
+        try {
+          if (cond() && p > prio) {
+            mejor = apodo;
+            prio = p;
+          }
+        } catch {
+        }
+      }
+      if (mejor && ns.apodo !== mejor) {
+        ns.apodo = mejor;
+        pushLog(`\u{1F4E3} La prensa te bautiza: "${mejor}".`);
+        hito(ns, `Te apodan "${mejor}" \u{1F4E3}`);
+      }
+    }
+    function nivelVinculo(pts) {
+      if (pts >= 100) return "\xEDdolo";
+      if (pts >= 55) return "hist\xF3rico";
+      if (pts >= 25) return "relevante";
+      return "jugador";
+    }
+    function actualizarVinculo(ns, ganoTitulo) {
+      const cn = ns.club.n;
+      if (!ns.vinculos[cn]) ns.vinculos[cn] = { n: cn, pais: ns.club.pais, puntos: 0, nivel: "jugador" };
+      const v = ns.vinculos[cn];
+      let p = 2;
+      p += ns.golesTemporada * 0.5 + ns.asistTemporada * 0.3;
+      p += ganoTitulo ? 12 : 0;
+      p += ns.hinchada >= 70 ? 4 : ns.hinchada >= 50 ? 2 : 0;
+      if (ns.flags.includes("capitan")) p += 2;
+      v.puntos = Math.round(v.puntos + p);
+      const nuevoNivel = nivelVinculo(v.puntos);
+      if (nuevoNivel !== v.nivel) {
+        v.nivel = nuevoNivel;
+        const emoji = { relevante: "\u{1F535}", hist\u00F3rico: "\u{1F7E1}", \u00EDdolo: "\u{1F534}" }[nuevoNivel] || "";
+        pushLog(`${emoji} En ${cn} ya sos ${nuevoNivel.toUpperCase()} del club.`);
+        hito(ns, `${nuevoNivel.charAt(0).toUpperCase() + nuevoNivel.slice(1)} de ${cn} ${emoji}`);
+        if (nuevoNivel === "\xEDdolo") {
+          const ex = ns.exClubes.find((c) => c.n === cn);
+          if (ex) ex.idolo = true;
+          notificar("\u{1F534}", "\xA1\xCDDOLO DEL CLUB!", `La gente de ${cn} te ama`);
+        }
+      }
+    }
+    function debeRetirarse(ns) {
+      if (ns.edad < 32) return false;
+      if (ns.edad >= 41) return true;
+      const media = calcMediaEf(ns);
+      let presion = (ns.edad - 32) * 12;
+      if (ns.minutosTemp < 300) presion += 25;
+      if (ns.moral < 30) presion += 20;
+      if (ns.fitness < 40) presion += 15;
+      if (media < 65) presion += 15;
+      presion -= (ns.stats.mentalidad - 60) / 2;
+      presion -= media - 75;
+      presion -= nivelCuidado(ns) * 25;
+      return Math.random() * 100 < presion;
+    }
+    function sorteoTorneo(ns) {
+      const cont = CLUBES[ns.club.pais].cont;
+      if (ns.div === 1 && ns.club.f >= 78) {
+        if (cont === "Europa" && Math.random() < 0.6) return "champions";
+        if (cont === "Sudam\xE9rica" && Math.random() < 0.6) return "libertadores";
+      }
+      if (ns.titulos >= 1 && Math.random() < 0.2) return "mundialClubes";
+      return null;
+    }
+    function iniciarTorneo(ns, key) {
+      const t = TORNEOS[key];
+      pushLog(`\u2501\u2501\u2501 ${t.emoji} ${t.nombre} \u2501\u2501\u2501`, `Arranca el torneo. ${t.partidos} partidos decisivos por delante.`);
+      setTorneoActivo({ key, ...t, partido: 0, ganados: 0, seleccion: !!t.seleccion });
+      setState(ns);
+      setFase("torneo");
+    }
+    function jugarPartidoTorneo(eleccion) {
+      if (!torneoActivo) return;
+      const media = calcMediaEf(state);
+      const bonus = eleccion.bonus || 0;
+      const exito = Math.random() * 100 < clamp(45 + (media - 70) + bonus, 15, 90);
+      avanzarTorneo(exito, eleccion.txt);
+    }
+    function avanzarTorneo(exito, txt) {
+      const tr = torneoActivo;
+      if (!tr) return;
+      const ns = structuredClone(state);
+      const ganados = tr.ganados + (exito ? 1 : 0);
+      if (exito) {
+        ns.rep = clamp(ns.rep + 3);
+        ns.fama = clamp(ns.fama + 4);
+        if (Math.random() < 0.5) {
+          ns.golesCarrera += 1;
+          if (tr.seleccion) ns.selecGoles += 1;
+        }
+      } else ns.moral = clamp(ns.moral - 4);
+      pushLog(`${exito ? "\u2705" : "\u274C"} ${txt} \u2014 ${exito ? "Pas\xE1s de ronda" : "Sufr\xEDs"}`);
+      const partido = tr.partido + 1;
+      if (partido >= tr.partidos) {
+        const campeon = ganados >= Math.ceil(tr.partidos * 0.6);
+        if (campeon) {
+          if (tr.seleccion && tr.key === "mundial") {
+            ns.mundiales += 1;
+            ns.fama = clamp(ns.fama + 40);
+            ns.rep = clamp(ns.rep + 20);
+            pushLog(`\u{1F30E}\u{1F3C6} \xA1CAMPE\xD3N DEL MUNDO! Entr\xE1s en la historia.`);
+            hito(ns, "CAMPE\xD3N DEL MUNDO \u{1F30E}");
+            notificar("\u{1F30E}", "\xA1CAMPE\xD3N DEL MUNDO!", "Levantaste la Copa. Sos leyenda.");
+          } else {
+            ns.titulosInt += 1;
+            ns.fama = clamp(ns.fama + 20);
+            ns.rep = clamp(ns.rep + 10);
+            pushLog(`${tr.emoji} \xA1CAMPE\xD3N de ${tr.nombre}!`);
+            hito(ns, `Campe\xF3n ${tr.nombre} ${tr.emoji}`);
+            notificar(tr.emoji, `\xA1CAMPE\xD3N!`, `Ganaste la ${tr.nombre}`);
+          }
+        } else pushLog(`${tr.emoji} Qued\xE1s eliminado en ${tr.nombre}. Ganaste ${ganados}/${tr.partidos}.`);
+        const eraSeleccion = tr.seleccion;
+        setState(ns);
+        setTorneoActivo(null);
+        setFase("jugando");
+        setTimeout(() => eraSeleccion ? abrirPretemporada(ns) : chequearSeleccion(ns), 600);
+        return;
+      }
+      setState(ns);
+      setTorneoActivo({ ...tr, partido, ganados });
+      setFase("torneo");
+    }
+    function chequearSeleccion(ns) {
+      const media = calcMediaEf(ns);
+      const umbral = (SELECCIONES[ns.nacion] || 80) - 8;
+      if (media >= umbral && !ns.enSeleccion) {
+        ns.enSeleccion = true;
+        if (!ns.flags.includes("seleccionado")) ns.flags.push("seleccionado");
+        pushLog(`\u{1F1E6}\u{1F1F7} \xA1Te convocan a la Selecci\xF3n de ${ns.nacion} por primera vez!`);
+        notificar("\u{1F1E6}\u{1F1F7}", "\xA1SELECCI\xD3N NACIONAL!", `Primera convocatoria a ${ns.nacion}`);
+        hito(ns, `Debut en la Selecci\xF3n \u{1F1E6}\u{1F1F7}`);
+      }
+      if (ns.enSeleccion) {
+        ns.selecPartidos += rnd(4, 8);
+        const g = rnd(0, ns.pos === "DEL" ? 4 : 2);
+        ns.selecGoles += g;
+        if (g > 0) {
+          ns.fama = clamp(ns.fama + g * 2);
+          pushLog(`\u{1F1E6}\u{1F1F7} Con la Selecci\xF3n: ${g} gol${g > 1 ? "es" : ""} en las Eliminatorias.`);
+        }
+        if (Math.random() < 0.35) {
+          setTimeout(() => iniciarTorneo({ ...ns }, Math.random() < 0.5 ? "mundial" : "copaAmerica"), 400);
+          setState(ns);
+          return;
+        }
+      }
+      setState(ns);
+      setTimeout(() => abrirPretemporada(ns), 500);
+    }
+    function abrirPretemporada(s) {
+      const puntos = 3 + Math.floor(s.moral / 25) + s.titulos + (s.flags.includes("capitan") ? 1 : 0);
+      setPtPuntos(puntos);
+      setState(s);
+      setFase("pretemporada");
+    }
+    function subirStat(k) {
+      if (ptPuntos <= 0) return;
+      setState((s) => {
+        const ns = structuredClone(s);
+        ns.stats[k] = clamp(ns.stats[k] + 1);
+        return ns;
+      });
+      setPtPuntos((p) => p - 1);
+    }
+    function offseasonEvent() {
+      const ev = pick(EVENTOS_OFFSEASON);
+      setEvento({ ...ev, offseason: true, cat: "offseason", peso: 0, opciones: ev.opciones });
+      setFase("jugando");
+    }
+    function toggleStaff(tipo, nivel) {
+      setState((s) => {
+        const ns = structuredClone(s);
+        const antes = ns.staff[tipo];
+        ns.staff[tipo] = antes === nivel ? 0 : nivel;
+        if (ns.staff[tipo] !== 0 && ns.staff[tipo] !== antes) {
+          if (!ns.chanta) ns.chanta = {};
+          const rangos = { manager: [0.02, 0.35], trainer: [0.01, 0.12], psico: [0.01, 0.1], nutri: [0.01, 0.08] };
+          const [lo, hi] = rangos[tipo] || [0.02, 0.2];
+          ns.chanta[tipo] = rndF(lo, hi);
+        }
+        return ns;
+      });
+    }
+    function invertir(id, monto) {
+      setState((s) => {
+        if (s.plata < monto) return s;
+        const ns = structuredClone(s);
+        ns.plata -= monto;
+        ns.inversiones.push({ id, monto });
+        return ns;
+      });
+    }
+    function comprarConsumible(id) {
+      setState((s) => {
+        const cfg = CONSUMIBLES.find((c) => c.id === id);
+        if (!cfg || s.plata < cfg.costo || s.consumibles && s.consumibles[id]) return s;
+        const ns = structuredClone(s);
+        ns.plata -= cfg.costo;
+        if (!ns.consumibles) ns.consumibles = {};
+        ns.consumibles[id] = true;
+        return ns;
+      });
+    }
+    function comprarBoost(id) {
+      setState((s) => {
+        const cfg = BOOSTS.find((b) => b.id === id);
+        if (!cfg || s.plata < cfg.costo) return s;
+        if (cfg.unico && s.boosts && s.boosts[id]) return s;
+        if (cfg.req && !cfg.req(s)) return s;
+        const ns = structuredClone(s);
+        ns.plata -= cfg.costo;
+        if (!ns.boosts) ns.boosts = {};
+        ns.boosts[id] = { temps: 0 };
+        pushLog(`\u2705 Contrataste: ${cfg.nombre}.`);
+        return ns;
+      });
+    }
+    function quitarBoost(id) {
+      setState((s) => {
+        const cfg = BOOSTS.find((b) => b.id === id);
+        if (cfg && cfg.unico) return s;
+        const ns = structuredClone(s);
+        if (ns.boosts) delete ns.boosts[id];
+        return ns;
+      });
+    }
+    function pedirPrestamo(monto) {
+      setState((s) => {
+        const ns = structuredClone(s);
+        ns.plata += monto;
+        ns.deuda = (ns.deuda || 0) + monto;
+        pushLog(`\u{1F3E6} Pediste un pr\xE9stamo de \u{1F4B0}${monto}. Lo devolv\xE9s con 20% de inter\xE9s al fin de temporada.`);
+        return ns;
+      });
+    }
+    function entrarMercado(s) {
+      try {
+        const clubEnCrisis = s.sinTitulos >= 2 && s.div === 1;
+        const fundido = s.plata <= 2;
+        if (clubEnCrisis && fundido && Math.random() < 0.7) {
+          setState({ ...s, _combo: true });
+          setFase("crisisInst");
+          return;
+        }
+        if (clubEnCrisis && Math.random() < 0.6) {
+          setState({ ...s, _combo: false });
+          setFase("crisisInst");
+          return;
+        }
+        generarOfertas(s);
+        setFase("mercado");
+      } catch (e) {
+        setOfertas([{ club: s.club, tipo: "quedarse", sueldo: Math.max(1, Math.round(s.club.f / 12)), desc: "Renovar y seguir en casa", negociable: false }]);
+        setFase("mercado");
+      }
+    }
+    function resolverCrisis(opcion) {
+      let ns = structuredClone(state);
+      const protegido = STAFF.manager.niveles[ns.staff.manager].protegeCrisis;
+      if (opcion === "bajarSueldo") {
+        ns.sueldo = Math.max(1, Math.round(ns.sueldo * 0.7));
+        ns.vestuario = clamp(ns.vestuario + 5);
+        pushLog(`\u{1F4B8} Baj\xE1s el sueldo para quedarte en ${ns.club.n}. El club lo valora.`);
+        ns.sinTitulos = 0;
+        setState(ns);
+        generarOfertas(ns);
+        setFase("mercado");
+      } else if (opcion === "aguantar") {
+        if (!protegido && Math.random() < 0.5) {
+          pushLog(`\u26A0\uFE0F El club te libera y qued\xE1s sin equipo. Sin representante, cuesta reubicarse.`);
+          const random = buscarClub(ns.pais, Math.random() < 0.5 ? 1 : 2, 55, 72) || ns.club;
+          ns.club = random;
+          ns.div = random.div;
+          ns.sueldo = Math.max(1, Math.round(random.f / 12));
+          pushLog(`\u{1F53B} Termin\xE1s firmando con ${random.n} en condiciones bajas.`);
+        } else {
+          pushLog(`\u{1F6E1}\uFE0F ${protegido ? "Tu representante te consigue una salida digna." : "Zaf\xE1s y te qued\xE1s."}`);
+        }
+        ns.sinTitulos = 0;
+        setState(ns);
+        generarOfertas(ns);
+        setFase("mercado");
+      }
+    }
+    function generarOfertas(s) {
+      const media = calcMediaEf(s);
+      const bonusOf = STAFF.manager.niveles[s.staff.manager].bonusOfertas;
+      const famaBoost = Math.floor(s.fama / 25) + (s.consumibles && s.consumibles.cabala ? 1 : 0);
+      const ofs = [{ club: s.club, tipo: "quedarse", sueldo: Math.max(1, Math.round(s.club.f / 12)), desc: "Renovar y seguir en casa" }];
+      const targets = [];
+      if (s.div === 2 && media >= 58) targets.push(buscarClub(s.pais, 1, 68, 82));
+      if (s.flags.includes("en_carpeta_ita")) targets.push(buscarClub("ITA", 2, 60, 70));
+      const umbralEuropa = 76 - famaBoost * 3;
+      if (media >= umbralEuropa) {
+        targets.push(buscarClub("ITA", 1, 78, 90));
+        targets.push(buscarClub("ESP", 1, 78, 93));
+        targets.push(buscarClub("ING", 1, 78, 93));
+      }
+      if (media >= 66 - famaBoost) targets.push(buscarClub(pick(["ITA", "ESP", "ING"]), 1, 70, 82));
+      if (s.div === 1 && s.pais === "ARG" && media >= 70) targets.push(buscarClub("ARG", 1, 78, 86, s.club.n));
+      if (s.flags.includes("quiere_volver")) {
+        const ex = s.exClubes.find((c) => c.idolo);
+        if (ex) targets.push({ ...ex, esRegreso: true });
+      }
+      if (media >= 66 && s.div === 1) {
+        const t = buscarClub(s.pais, 1, s.club.f - 5, s.club.f + 8, s.club.n);
+        if (t) targets.push({ ...t, traicion: true });
+      }
+      const filtrados = targets.filter(Boolean).slice(0, 3 + bonusOf + famaBoost);
+      filtrados.forEach((t) => {
+        const diferencial = rndF(0.8, 1.35);
+        const baseF = t.f / (t.div === 1 ? 7.5 : 11);
+        const factorMedia = 1 + Math.max(0, media - 70) / 60;
+        const base = Math.max(1, Math.round(baseF * factorMedia * diferencial) + famaBoost);
+        ofs.push({
+          club: t,
+          tipo: t.esRegreso ? "regreso" : t.traicion ? "traicion" : t.pais !== s.pais ? "europa" : t.div === 1 && s.div === 2 ? "ascenso" : "cambio",
+          sueldo: base,
+          desc: t.esRegreso ? "\u{1F3E0} \xA1Volver como \xEDdolo!" : t.traicion ? "Cl\xE1sico/rival directo. Peligroso." : t.pais !== s.pais ? `Salto a ${CLUBES[t.pais].liga}` : t.div === 1 && s.div === 2 ? "Ascenso a Primera" : "Nuevo desaf\xEDo",
+          hinchadaHit: t.traicion ? -40 : 0,
+          negociable: true
+        });
+      });
+      setOfertas(ofs);
+    }
+    function registrarSalida(ns) {
+      if (ns.club && !ns.exClubes.some((c) => c.n === ns.club.n)) {
+        ns.exClubes.push({ n: ns.club.n, pais: ns.club.pais, div: ns.club.div, f: ns.club.f, idolo: ns.hinchada >= 70, traicion: false });
+      }
+    }
+    function aceptarOferta(of, sueldoFinal) {
+      let ns = structuredClone(state);
+      if (of.tipo !== "quedarse") registrarSalida(ns);
+      const bonusMgr = STAFF.manager.niveles[ns.staff.manager].bonusSueldo;
+      ns.sueldo = Math.round((sueldoFinal || of.sueldo) * bonusMgr);
+      ns.club = { n: of.club.n, f: of.club.f, pais: of.club.pais, div: of.club.div };
+      ns.div = of.club.div;
+      ns.pais = of.club.pais;
+      let msg = "";
+      if (of.tipo === "quedarse") {
+        ns.hinchada = clamp(ns.hinchada + 8);
+        ns.vestuario = clamp(ns.vestuario + 5);
+        msg = `\u{1F3E0} Segu\xEDs en ${of.club.n}.`;
+      } else if (of.tipo === "regreso") {
+        ns.hinchada = 85;
+        ns.moral = clamp(ns.moral + 15);
+        ns.vestuario = 60;
+        ns.flags = ns.flags.filter((f) => f !== "quiere_volver");
+        msg = `\u{1F3E0} \xA1VOLV\xC9S A ${of.club.n} COMO \xCDDOLO! La hinchada estalla.`;
+        hito(ns, `Regreso triunfal a ${of.club.n} \u{1F3E0}`);
+      } else if (of.tipo === "traicion") {
+        ns.hinchada = clamp(ns.hinchada - 40);
+        ns.rep = clamp(ns.rep + 4);
+        if (!ns.flags.includes("traidor")) ns.flags.push("traidor");
+        const ex = ns.exClubes[ns.exClubes.length - 1];
+        if (ex) ex.traicion = true;
+        ns.vestuario = 45;
+        msg = `\u{1F40D} Fich\xE1s por ${of.club.n}. Te gritan TRAIDOR.`;
+        hito(ns, `Traici\xF3n a un ex club \u{1F40D}`);
+      } else if (of.tipo === "europa") {
+        ns.rep = clamp(ns.rep + 12);
+        ns.hinchada = clamp(ns.hinchada + 5);
+        ns.vestuario = 40;
+        if (!ns.flags.includes("europeo")) ns.flags.push("europeo");
+        msg = `\u2708\uFE0F \xA1Te vas a ${of.club.n} (${CLUBES[of.club.pais].liga})!`;
+        hito(ns, `Salto a Europa: ${of.club.n} \u2708\uFE0F`);
+      } else if (of.tipo === "ascenso") {
+        ns.rep = clamp(ns.rep + 6);
+        ns.vestuario = 45;
+        msg = `\u2B06\uFE0F Ascend\xE9s a Primera con ${of.club.n}.`;
+        hito(ns, `Primera Divisi\xF3n con ${of.club.n} \u2B06\uFE0F`);
+      } else {
+        ns.rep = clamp(ns.rep + 4);
+        ns.vestuario = 45;
+        msg = `\u{1F501} Nuevo club: ${of.club.n}.`;
+      }
+      ns.rival = pick(RIVALES_NOMBRES);
+      setState(ns);
+      pushLog(`\u2501\u2501\u2501 \u{1F501} Mercado \u2501\u2501\u2501`, msg, `Sueldo: ${ns.sueldo}/temp.`);
+      setFase("jugando");
+      setTimeout(() => offseasonEvent(), 500);
+    }
+    function lanzarMinijuego(tipo, cb) {
+      setMiniActivo({ tipo, cb });
+      setFase("mini");
+    }
+    function terminarMini(res) {
+      const cb = miniActivo.cb;
+      setMiniActivo(null);
+      setFase("jugando");
+      cb(res);
+    }
+    function resolverMini(s, tipo, exito) {
+      let ns = structuredClone(s);
+      if (exito) {
+        ns.rep = clamp(ns.rep + 5);
+        ns.moral = clamp(ns.moral + 6);
+        ns.hinchada = clamp(ns.hinchada + 5);
+        if (["penal", "tiro", "cabezazo"].includes(tipo)) {
+          ns.golesTemporada += 1;
+          ns.golesCarrera += 1;
+          ns.fama = clamp(ns.fama + 3);
+          if (tipo === "tiro" && Math.random() < 0.4 && !ns.flags.includes("golazo_viral_temp")) ns.flags.push("golazo_viral_temp");
+        }
+        pushLog(`\u{1F3AF} \xA1Minijuego ganado! (${tipo})`);
+      } else {
+        ns.moral = clamp(ns.moral - 6);
+        ns.rep = clamp(ns.rep - 2);
+        pushLog(`\u274C Fallaste (${tipo}).`);
+      }
+      return ns;
+    }
+    function exportarPartida() {
+      try {
+        return btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+      } catch {
+        return "";
+      }
+    }
+    function importarPartida(codigo) {
+      try {
+        const s = JSON.parse(decodeURIComponent(escape(atob(codigo.trim()))));
+        if (!s.nombre || !s.stats) throw new Error("inv\xE1lido");
+        setState(s);
+        setLog([`\u{1F4BE} Partida cargada: ${s.nombre}, ${s.edad} a\xF1os en ${s.club.n}.`]);
+        setFase("jugando");
+        setTimeout(() => dispararEvento(s), 400);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    function finPretemporada() {
+      setFase("tienda");
+    }
+    function finTienda() {
+      entrarMercado(state);
+    }
+    if (fase === "intro") return /* @__PURE__ */ react_shim_default.createElement(Intro, { onStart: () => setFase("crear"), onImport: () => setFase("importar") });
+    if (fase === "importar") return /* @__PURE__ */ react_shim_default.createElement(ImportarPantalla, { onImport: importarPartida, onVolver: () => setFase("intro") });
+    if (fase === "crear") return /* @__PURE__ */ react_shim_default.createElement(CrearJugador, { ...{ nombre, setNombre, pos, setPos, pais, setPais, onCrear: nuevoJugador } });
+    if (fase === "bienvenida") return /* @__PURE__ */ react_shim_default.createElement(Bienvenida, { state, onSeguir: empezarCarrera });
+    if (fase === "fin") return /* @__PURE__ */ react_shim_default.createElement(Final, { state, onReiniciar: () => {
+      setState(null);
+      setFase("intro");
+      setLog([]);
+    } });
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.wrap }, /* @__PURE__ */ react_shim_default.createElement("style", null, CSS), notif && /* @__PURE__ */ react_shim_default.createElement("div", { style: S.notifOverlay, key: notif.id, onClick: () => notif.tipo === "auto" && notiSiguiente() }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.notifCard, ...notif.color ? { background: notif.color } : {} }, className: "notifIn", onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.notifEmoji }, notif.emoji), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.notifTitulo }, notif.titulo), notif.sub && /* @__PURE__ */ react_shim_default.createElement("div", { style: S.notifSub }, notif.sub), notif.tipo === "push" && /* @__PURE__ */ react_shim_default.createElement("button", { style: S.notifBtn, onClick: notiSiguiente }, notifCola.length > 1 ? "Siguiente \u2192" : "Entendido")), notifCola.length > 1 && /* @__PURE__ */ react_shim_default.createElement("div", { style: S.notifContador }, notifCola.length - 1, " m\xE1s")), state && /* @__PURE__ */ react_shim_default.createElement(HUD, { state, onSave: () => setFase("guardar") }), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.mainGrid, className: "mgrid" }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.centro }, fase === "jugando" && evento && /* @__PURE__ */ react_shim_default.createElement(EventoCard, { evento, state, opciones: evento.offseason ? evento.opciones : opcionesVisibles(evento, state), onElegir: evento.offseason ? (op) => {
+      const ns = aplicarEfectos(state, op.ef || {});
+      pushLog(`\u{1F334} ${op.txt}`);
+      setEvento(null);
+      setState(ns);
+      setTimeout(() => dispararEvento(ns), 300);
+    } : elegirOpcion }), fase === "jugando" && !evento && /* @__PURE__ */ react_shim_default.createElement("div", { style: S.esperando }, /* @__PURE__ */ react_shim_default.createElement("div", { className: "spin" }, "\u26BD"), /* @__PURE__ */ react_shim_default.createElement("p", null, "El partido rueda...")), fase === "pretemporada" && /* @__PURE__ */ react_shim_default.createElement(Pretemporada, { state, puntos: ptPuntos, onSubir: subirStat, onCerrar: finPretemporada }), fase === "tienda" && /* @__PURE__ */ react_shim_default.createElement(Tienda, { state, onToggle: toggleStaff, onInvertir: invertir, onConsumible: comprarConsumible, onBoost: comprarBoost, onQuitarBoost: quitarBoost, onPrestamo: pedirPrestamo, onCerrar: finTienda }), fase === "mercado" && /* @__PURE__ */ react_shim_default.createElement(Mercado, { ofertas, state, onAceptar: aceptarOferta }), fase === "crisisInst" && /* @__PURE__ */ react_shim_default.createElement(CrisisInstitucional, { state, onResolver: resolverCrisis }), fase === "torneo" && torneoActivo && /* @__PURE__ */ react_shim_default.createElement(TorneoView, { torneo: torneoActivo, state, onJugar: jugarPartidoTorneo, onMini: (mini, txt) => lanzarMinijuego(mini, (ok) => avanzarTorneo(ok, txt)) }), fase === "mini" && miniActivo && /* @__PURE__ */ react_shim_default.createElement(Minijuego, { tipo: miniActivo.tipo, state, onTerminar: terminarMini }), fase === "guardar" && /* @__PURE__ */ react_shim_default.createElement(GuardarPantalla, { codigo: exportarPartida(), onVolver: () => setFase("jugando") })), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.logPanel }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.logTitle }, "\u{1F4FB} Relato"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.logBody }, log.map((l, i) => /* @__PURE__ */ react_shim_default.createElement("div", { key: i, style: S.logLine, className: l.startsWith("\u2501") ? "logHeader" : "" }, l)), /* @__PURE__ */ react_shim_default.createElement("div", { ref: logEnd })))));
+  }
+  function resumenEfecto(ef) {
+    const p = [];
+    if (ef.rep) p.push(`Rep ${ef.rep > 0 ? "+" : ""}${ef.rep}`);
+    if (ef.moral) p.push(`Moral ${ef.moral > 0 ? "+" : ""}${ef.moral}`);
+    if (ef.fama) p.push(`Fama ${ef.fama > 0 ? "+" : ""}${ef.fama}`);
+    if (ef.hinchada) p.push(`Hinchada ${ef.hinchada > 0 ? "+" : ""}${ef.hinchada}`);
+    if (ef.plata) p.push(`\u{1F4B0}${ef.plata > 0 ? "+" : ""}${ef.plata}`);
+    if (ef.fitness) p.push(`F\xEDsico ${ef.fitness > 0 ? "+" : ""}${ef.fitness}`);
+    if (ef.stats) p.push(Object.entries(ef.stats).map(([k, v]) => `${STAT_LABELS[k]}+${v}`).join(" "));
+    return p.length ? `(${p.join(", ")})` : "";
+  }
+  function Intro({ onStart, onImport }) {
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.wrap }, /* @__PURE__ */ react_shim_default.createElement("style", null, CSS), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.introBox }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.introTag }, "SIMULADOR DE CARRERA"), /* @__PURE__ */ react_shim_default.createElement("h1", { style: S.introTitle }, "EL POTRERO"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.introSub }, "Del ascenso a leyenda. Tu objetivo: ser ", /* @__PURE__ */ react_shim_default.createElement("b", { style: { color: COL.gold } }, "el mejor de la historia"), ". Bal\xF3n de Oro, Mundiales, Champions y la gloria eterna."), /* @__PURE__ */ react_shim_default.createElement("ul", { style: S.introList }, /* @__PURE__ */ react_shim_default.createElement("li", null, "\u{1F3C5} Bal\xF3n de Oro, Pusk\xE1s, Bota de Oro, Mundiales"), /* @__PURE__ */ react_shim_default.createElement("li", null, "\u{1F30E} Selecci\xF3n + Champions, Libertadores, Mundial de Clubes"), /* @__PURE__ */ react_shim_default.createElement("li", null, "\u{1F4B0} Econom\xEDa real: cuotas de staff, inversiones con riesgo"), /* @__PURE__ */ react_shim_default.createElement("li", null, "\u2B50 Sistema de FAMA que abre puertas m\xE1s all\xE1 del talento"), /* @__PURE__ */ react_shim_default.createElement("li", null, "\u{1F9E0} Memoria de clubes: volv\xE9s como \xEDdolo o carg\xE1s la traici\xF3n"), /* @__PURE__ */ react_shim_default.createElement("li", null, "\u{1F3AE} Minijuegos variados: penal, memoria, secuencias, torneos"), /* @__PURE__ */ react_shim_default.createElement("li", null, "\u{1F4C9} Crisis institucionales y retiro din\xE1mico seg\xFAn tu estado")), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnPrimary, onClick: onStart }, "Nueva carrera"), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnGhost, onClick: onImport }, "Cargar partida guardada"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.legal }, "Clubes/torneos reales con fines personales. No distribuir comercialmente.")));
+  }
+  function ImportarPantalla({ onImport, onVolver }) {
+    const [cod, setCod] = useState("");
+    const [err, setErr] = useState(false);
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.wrap }, /* @__PURE__ */ react_shim_default.createElement("style", null, CSS), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.crearBox }, /* @__PURE__ */ react_shim_default.createElement("h2", { style: S.h2 }, "Cargar partida"), /* @__PURE__ */ react_shim_default.createElement("p", { style: { color: COL.txt2, fontSize: 14 } }, "Peg\xE1 el c\xF3digo de tu partida guardada:"), /* @__PURE__ */ react_shim_default.createElement("textarea", { style: { ...S.input, minHeight: 120, fontFamily: "monospace", fontSize: 11 }, value: cod, onChange: (e) => setCod(e.target.value), placeholder: "Peg\xE1 ac\xE1 el c\xF3digo..." }), err && /* @__PURE__ */ react_shim_default.createElement("p", { style: { color: COL.danger, fontSize: 13 } }, "C\xF3digo inv\xE1lido."), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnPrimary, onClick: () => {
+      if (!onImport(cod)) setErr(true);
+    } }, "Cargar"), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnGhost, onClick: onVolver }, "Volver")));
+  }
+  function GuardarPantalla({ codigo, onVolver }) {
+    const [copiado, setCopiado] = useState(false);
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F4BE} GUARDAR PARTIDA"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, 'Copi\xE1 este c\xF3digo y guardalo. Con \xE9l retom\xE1s tu carrera desde "Cargar partida".'), /* @__PURE__ */ react_shim_default.createElement("textarea", { readOnly: true, style: { ...S.input, minHeight: 120, fontFamily: "monospace", fontSize: 10 }, value: codigo, onClick: (e) => e.target.select() }), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnPrimary, onClick: () => {
+      navigator.clipboard?.writeText(codigo);
+      setCopiado(true);
+    } }, copiado ? "\u2705 Copiado" : "Copiar c\xF3digo"), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnGhost, onClick: onVolver }, "Volver al juego"));
+  }
+  function CrearJugador({ nombre, setNombre, pos, setPos, pais, setPais, onCrear }) {
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.wrap }, /* @__PURE__ */ react_shim_default.createElement("style", null, CSS), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.crearBox }, /* @__PURE__ */ react_shim_default.createElement("h2", { style: S.h2 }, "Cre\xE1 tu jugador"), /* @__PURE__ */ react_shim_default.createElement("label", { style: S.label }, "Apellido / apodo"), /* @__PURE__ */ react_shim_default.createElement("input", { style: S.input, value: nombre, onChange: (e) => setNombre(e.target.value), placeholder: "Ej: El Pipa, Riquelme...", maxLength: 20 }), /* @__PURE__ */ react_shim_default.createElement("label", { style: S.label }, "Nacionalidad"), /* @__PURE__ */ react_shim_default.createElement("select", { style: S.input, value: pais, onChange: (e) => setPais(e.target.value) }, Object.keys(SELECCIONES).map((p) => /* @__PURE__ */ react_shim_default.createElement("option", { key: p }, p))), /* @__PURE__ */ react_shim_default.createElement("label", { style: S.label }, "Posici\xF3n"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.posGrid }, Object.entries(POSICIONES).map(([k, v]) => /* @__PURE__ */ react_shim_default.createElement("button", { key: k, onClick: () => setPos(k), style: { ...S.posBtn, ...pos === k ? S.posBtnActive : {} } }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 28 } }, v.emoji), /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontWeight: 700 } }, v.nombre), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.posStats }, v.statsClave.map((s) => STAT_LABELS[s]).join(" \xB7 "))))), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnPrimary, onClick: onCrear }, "Debutar \u26BD")));
+  }
+  function Bienvenida({ state: s, onSeguir }) {
+    const pot = s.potencial || 70;
+    let veredicto, tono;
+    if (pot >= 92) {
+      veredicto = "Pibe... lo que ten\xE9s no se ense\xF1a. No lo digo seguido, pero vos pod\xE9s ser el mejor del mundo. No lo desperdicies.";
+      tono = COL.gold;
+    } else if (pot >= 84) {
+      veredicto = "Ten\xE9s algo especial, de los que aparecen cada tanto. Si labur\xE1s en serio, te veo jugando en Europa y peleando cosas grandes.";
+      tono = COL.accent;
+    } else if (pot >= 72) {
+      veredicto = "Sos bueno, ten\xE9s con qu\xE9. Con trabajo y cabeza pod\xE9s tener una carrera muy digna, de esas que la gente recuerda.";
+      tono = "#5aa9ff";
+    } else {
+      veredicto = "Mir\xE1, materia prima hay. No sos el m\xE1s dotado, pero he visto a muchos con menos llegar lejos a pura garra y decisiones inteligentes. Depende de vos.";
+      tono = COL.txt2;
+    }
+    const posLbl = POSICIONES[s.pos].nombre.toLowerCase();
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.wrap }, /* @__PURE__ */ react_shim_default.createElement("style", null, CSS), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.bienvBox }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.bienvAvatar }, "\u{1F468}\u200D\u{1F3EB}"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.bienvNombre }, "K. Murray"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.bienvRol }, "Entrenador de inferiores \xB7 ", s.club.n), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.bienvCharla }, /* @__PURE__ */ react_shim_default.createElement("p", null, "As\xED que vos sos ", s.nombre, ". Bienvenido a ", s.club.n, ", pibe."), /* @__PURE__ */ react_shim_default.createElement("p", null, "Te vi entrenar con los grandes. Como ", posLbl, ", ten\xE9s lo tuyo."), /* @__PURE__ */ react_shim_default.createElement("p", { style: { color: tono, fontWeight: 700, fontSize: 17, borderLeft: `3px solid ${tono}`, paddingLeft: 12, margin: "16px 0" } }, '"', veredicto, '"'), /* @__PURE__ */ react_shim_default.createElement("p", { style: { color: COL.txt2, fontSize: 14 } }, "El resto lo escrib\xEDs vos, adentro de la cancha. And\xE1 que te esperan.")), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnPrimary, onClick: onSeguir }, "Salir a la cancha \u26BD")));
+  }
+  function HUD({ state: s, onSave }) {
+    const media = calcMediaEf(s);
+    const [verStats, setVerStats] = useState(false);
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hudFifa, className: "pitchbg" }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.fifaCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.fifaCardTop }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.fifaMedia }, media), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.fifaPos }, s.pos)), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.fifaEmoji }, POSICIONES[s.pos].emoji)), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.fifaName }, s.nombre), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.fifaClub }, s.club.n, s.vinculos?.[s.club.n] && s.vinculos[s.club.n].nivel !== "jugador" ? ` \xB7 ${{ "\xEDdolo": "\u{1F534}", "hist\xF3rico": "\u{1F7E1}", "relevante": "\u{1F535}" }[s.vinculos[s.club.n].nivel]}` : ""), s.apodo && /* @__PURE__ */ react_shim_default.createElement("div", { style: S.fifaApodo }, '"', s.apodo, '"'), (s.racha >= 3 || s.racha <= -2) && /* @__PURE__ */ react_shim_default.createElement("div", { style: S.fifaRacha }, s.racha >= 3 ? "\u{1F525} En llamas" : "\u{1F976} En baj\xF3n")), /* @__PURE__ */ react_shim_default.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hudTopRow }, /* @__PURE__ */ react_shim_default.createElement("span", { style: S.hudInfo }, CLUBES[s.club?.pais]?.liga || s.club?.n || "", s.div === 2 ? " \xB7 2\xAA" : "", " \xB7 ", s.edad, " a\xF1os \xB7 T", s.temporada), /* @__PURE__ */ react_shim_default.createElement("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ react_shim_default.createElement("button", { style: S.saveBtn, onClick: () => setVerStats((v) => !v) }, verStats ? "\u25B2 Stats" : "\u25BC Stats"), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.saveBtn, onClick: onSave }, "\u{1F4BE}"))), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hudBars }, /* @__PURE__ */ react_shim_default.createElement(Bar, { lbl: "Rep", v: s.rep, c: "#ffd23f" }), /* @__PURE__ */ react_shim_default.createElement(Bar, { lbl: "Moral", v: s.moral, c: "#4fd18b" }), /* @__PURE__ */ react_shim_default.createElement(Bar, { lbl: "F\xEDsico", v: s.fitness, c: "#5aa9ff" }), /* @__PURE__ */ react_shim_default.createElement(Bar, { lbl: "Hinchada", v: s.hinchada, c: "#ff6b9d" }), /* @__PURE__ */ react_shim_default.createElement(Bar, { lbl: "Vestuario", v: s.vestuario, c: "#c792ea" }), /* @__PURE__ */ react_shim_default.createElement(Bar, { lbl: "Fama", v: s.fama, c: "#ff9f43" })), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hudStats }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hudStat }, "\u26BD ", s.golesCarrera), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hudStat }, "\u{1F170}\uFE0F ", s.asistCarrera), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hudStat }, "\u{1F3C6} ", s.titulos), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hudStat }, "\u{1F30D} ", s.titulosInt), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hudStat }, "\u{1F3C5} ", s.premios.balonOro || 0), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hudStat }, "\u{1F4B0} ", s.plata), s.deuda > 0 && /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.hudStat, color: COL.danger } }, "\u{1F3E6} -", s.deuda), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hudStat, title: "Puntaje leyenda" }, "\u{1F451} ", calcLeyenda(s))), verStats && /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hudStatsTecnicos }, STAT_KEYS.map((k) => {
+      const clave = POSICIONES[s.pos].statsClave.includes(k);
+      const v = s.stats[k];
+      const col = v >= 80 ? COL.accent : v >= 65 ? COL.gold : v >= 50 ? COL.txt : COL.txt2;
+      return /* @__PURE__ */ react_shim_default.createElement("div", { key: k, style: S.statTecnico }, /* @__PURE__ */ react_shim_default.createElement("span", { style: { color: clave ? COL.accent : COL.txt2, fontWeight: clave ? 700 : 400 } }, STAT_LABELS[k]), /* @__PURE__ */ react_shim_default.createElement("span", { style: { fontWeight: 800, color: col } }, v));
+    }))));
+  }
+  function Bar({ lbl, v, c }) {
+    return /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.barLbl }, lbl), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.barTrack }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.barFill, width: `${v}%`, background: c } })));
+  }
+  function EventoCard({ evento, state, opciones, onElegir }) {
+    const map = { deportivo: ["#4fd18b", "DEPORTIVO"], vestuario: ["#c792ea", "VESTUARIO"], prensa: ["#5aa9ff", "PRENSA"], personal: ["#ffd23f", "VIDA PERSONAL"], suerte: ["#ff9f43", "\u{1F340} GOLPE DE SUERTE"], crisis: ["#ff6b6b", "CRISIS"], fama: ["#ff9f43", "\u2B50 FAMA"], gasto: ["#ffd23f", "\u{1F4B8} GASTO"], memoria: ["#c792ea", "\u{1F9E0} MEMORIA"], offseason: ["#5aa9ff", "\u{1F334} PRETEMPORADA"] };
+    const [c, lbl] = map[evento.cat] || ["#4fd18b", "SITUACI\xD3N"];
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard, className: "evIn" }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.evTag, color: c } }, lbl), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, evento.texto(state)), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evOpciones }, opciones.map((op, i) => /* @__PURE__ */ react_shim_default.createElement("button", { key: i, className: "evOpt", style: S.evOpcion, onClick: () => onElegir(op) }, /* @__PURE__ */ react_shim_default.createElement("span", null, op.txt), /* @__PURE__ */ react_shim_default.createElement("span", { style: { display: "flex", gap: 6 } }, op.reqTxt && /* @__PURE__ */ react_shim_default.createElement("span", { style: S.reqTag }, "\u{1F513} ", op.reqTxt), op.mini && /* @__PURE__ */ react_shim_default.createElement("span", { style: S.miniTag }, "\u{1F3AE}"))))));
+  }
+  function Pretemporada({ state, puntos, onSubir, onCerrar }) {
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "PRETEMPORADA \xB7 ENTRENAMIENTO"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, "Ganaste ", /* @__PURE__ */ react_shim_default.createElement("b", { style: { color: COL.gold } }, puntos, " puntos"), " por moral, t\xEDtulos y rendimiento."), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.statGrid }, STAT_KEYS.map((k) => /* @__PURE__ */ react_shim_default.createElement("div", { key: k, style: S.statRow }, /* @__PURE__ */ react_shim_default.createElement("span", { style: S.statName }, STAT_LABELS[k]), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.statTrack }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.statFill, width: `${state.stats[k]}%` } })), /* @__PURE__ */ react_shim_default.createElement("span", { style: S.statVal }, state.stats[k]), /* @__PURE__ */ react_shim_default.createElement("button", { style: { ...S.plusBtn, opacity: puntos > 0 ? 1 : 0.3 }, disabled: puntos <= 0, onClick: () => onSubir(k) }, "+")))), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnPrimary, onClick: onCerrar }, "A la oficina (staff e inversiones) \u2192"));
+  }
+  function Tienda({ state, onToggle, onInvertir, onConsumible, onBoost, onQuitarBoost, onPrestamo, onCerrar }) {
+    const cuotaTotal = Object.entries(state.staff).reduce((a, [t, n]) => a + cuotaStaff(STAFF[t].niveles[n], state.sueldo), 0);
+    const [monto, setMonto] = useState({});
+    const [prestamo, setPrestamo] = useState(5);
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F4BC} OFICINA \xB7 CAJA \u{1F4B0} ", state.plata, " \xB7 SUELDO ", state.sueldo, "/temp \xB7 CUOTAS -", cuotaTotal, state.deuda > 0 ? ` \xB7 DEUDA \u{1F4B0}${state.deuda}` : ""), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, "El staff cobra ", /* @__PURE__ */ react_shim_default.createElement("b", null, "seg\xFAn tu sueldo"), " (un % + fijo). Pod\xE9s desafectarlo cuando quieras. Cada agente tiene su ", /* @__PURE__ */ react_shim_default.createElement("b", { style: { color: COL.danger } }, "propia honestidad"), ", que no conoc\xE9s hasta tratarlo."), Object.entries(STAFF).map(([tipo, cfg]) => /* @__PURE__ */ react_shim_default.createElement("div", { key: tipo, style: S.staffBlock }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.staffHead }, cfg.emoji, " ", cfg.nombre, " ", /* @__PURE__ */ react_shim_default.createElement("span", { style: S.staffDesc }, "\xB7 ", cfg.desc)), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.staffNiveles }, cfg.niveles.map((niv, i) => {
+      const actual = state.staff[tipo] === i;
+      const cuota = cuotaStaff(niv, state.sueldo);
+      return /* @__PURE__ */ react_shim_default.createElement("button", { key: i, onClick: () => onToggle(tipo, i), style: { ...S.staffBtn, ...actual ? S.staffBtnActive : {} }, title: niv.nota || "" }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontWeight: 700, fontSize: 13 } }, niv.lbl), /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 12, color: COL.gold } }, cuota === 0 ? "gratis" : `\u{1F4B0}${cuota}/temp`), niv.pct > 0 && /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 9, color: COL.txt2 } }, Math.round(niv.pct * 100), "% + ", niv.base), actual && /* @__PURE__ */ react_shim_default.createElement("div", { style: S.staffActivo }, "ACTIVO"));
+    })))), /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.evTag, marginTop: 16 } }, "\u{1F9FF} C\xC1BALAS Y EXTRAS (una temporada)"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.boostGrid }, CONSUMIBLES.filter((c) => !c.pos || c.pos.includes(state.pos)).map((c) => {
+      const comprado = state.consumibles && state.consumibles[c.id];
+      const puede = state.plata >= c.costo && !comprado;
+      return /* @__PURE__ */ react_shim_default.createElement("button", { key: c.id, disabled: !puede, onClick: () => onConsumible(c.id), style: { ...S.boostCard, ...comprado ? S.boostCardOn : {}, opacity: puede || comprado ? 1 : 0.5 } }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 22 } }, c.emoji), /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontWeight: 700, fontSize: 13 } }, c.nombre), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.staffDesc }, c.desc), /* @__PURE__ */ react_shim_default.createElement("div", { style: { color: COL.gold, fontWeight: 700, fontSize: 13 } }, comprado ? "\u2705 Activo" : `\u{1F4B0}${c.costo}`));
+    })), /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.evTag, marginTop: 16 } }, "\u2699\uFE0F INVERSIONES EN TU CARRERA (boosts)"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.boostGrid }, BOOSTS.map((b) => {
+      const activo = state.boosts && state.boosts[b.id];
+      const cumpleReq = !b.req || b.req(state);
+      const bloqueadoUnico = b.unico && activo;
+      const puede = state.plata >= b.costo && cumpleReq && !bloqueadoUnico;
+      return /* @__PURE__ */ react_shim_default.createElement("div", { key: b.id, style: { ...S.boostCard, ...activo ? S.boostCardOn : {} } }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 22 } }, b.emoji), /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontWeight: 700, fontSize: 13 } }, b.nombre, " ", b.unico && /* @__PURE__ */ react_shim_default.createElement("span", { style: S.unicoTag }, "\xDANICO")), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.staffDesc }, b.desc), /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 12, marginTop: 4 } }, /* @__PURE__ */ react_shim_default.createElement("span", { style: { color: COL.gold, fontWeight: 700 } }, "\u{1F4B0}", b.costo), b.cuota > 0 && /* @__PURE__ */ react_shim_default.createElement("span", { style: { color: COL.txt2 } }, " + ", b.cuota, "/temp"), b.reqTxt && !cumpleReq && /* @__PURE__ */ react_shim_default.createElement("span", { style: { color: COL.danger, marginLeft: 6 } }, "\u{1F512} ", b.reqTxt)), activo ? b.unico ? /* @__PURE__ */ react_shim_default.createElement("div", { style: S.staffActivo }, "\u2705 ADQUIRIDO") : /* @__PURE__ */ react_shim_default.createElement("button", { style: { ...S.invBtn, background: COL.danger, marginTop: 6 }, onClick: () => onQuitarBoost(b.id) }, "Desafectar") : /* @__PURE__ */ react_shim_default.createElement("button", { style: { ...S.invBtn, marginTop: 6, opacity: puede ? 1 : 0.4 }, disabled: !puede, onClick: () => onBoost(b.id) }, "Contratar"));
+    })), /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.evTag, marginTop: 16 } }, "\u{1F4CA} INVERSIONES (resultado al fin de temporada)"), INVERSIONES.map((inv) => /* @__PURE__ */ react_shim_default.createElement("div", { key: inv.id, style: S.invRow }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ react_shim_default.createElement("b", null, inv.emoji, " ", inv.nombre), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.staffDesc }, inv.desc, " \xB7 m\xEDn \u{1F4B0}", inv.min)), /* @__PURE__ */ react_shim_default.createElement("input", { type: "number", min: inv.min, placeholder: inv.min, style: S.invInput, value: monto[inv.id] || "", onChange: (e) => setMonto({ ...monto, [inv.id]: e.target.value }) }), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.invBtn, disabled: state.plata < (Number(monto[inv.id]) || inv.min), onClick: () => {
+      const m = Number(monto[inv.id]) || inv.min;
+      if (m >= inv.min && state.plata >= m) {
+        onInvertir(inv.id, m);
+        setMonto({ ...monto, [inv.id]: "" });
+      }
+    } }, "Invertir"))), state.inversiones.length > 0 && /* @__PURE__ */ react_shim_default.createElement("p", { style: { color: COL.accent, fontSize: 13 } }, "Invertido esta temporada: ", state.inversiones.map((i) => `\u{1F4B0}${i.monto}`).join(", ")), /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.evTag, marginTop: 16 } }, "\u{1F3E6} PEDIR PR\xC9STAMO (se devuelve con 20% de inter\xE9s)"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.invRow }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ react_shim_default.createElement("b", null, "Adelanto de plata"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.staffDesc }, "Arriesgado pero \xFAtil temprano: compr\xE1 boosts para despegar. ", state.deuda > 0 ? `Ya deb\xE9s \u{1F4B0}${state.deuda}.` : "")), /* @__PURE__ */ react_shim_default.createElement("input", { type: "number", min: 1, style: S.invInput, value: prestamo, onChange: (e) => setPrestamo(Number(e.target.value)) }), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.invBtn, onClick: () => prestamo > 0 && onPrestamo(prestamo) }, "Pedir \u{1F4B0}", prestamo)), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnPrimary, onClick: onCerrar }, "Al mercado de pases \u2192"));
+  }
+  function Mercado({ ofertas, state, onAceptar }) {
+    const [neg, setNeg] = useState(null);
+    if (neg) return /* @__PURE__ */ react_shim_default.createElement(Negociacion, { of: neg, state, onCerrar: () => setNeg(null), onAceptar });
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F501} MERCADO DE PASES"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, ofertas.length, " ofertas. Tu fama (", state.fama, ") influye en lo que llega."), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.ofertaGrid }, ofertas.map((of, i) => /* @__PURE__ */ react_shim_default.createElement("div", { key: i, style: { ...S.ofertaCard, ...of.tipo === "regreso" ? { borderColor: COL.gold } : {} } }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.ofertaClub }, of.club?.n || "Club"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.ofertaNivel }, CLUBES[of.club?.pais]?.liga || "Liga", of.club?.div === 2 ? " \xB7 2\xAA" : "", " \xB7 f", of.club?.f ?? "?"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.ofertaDesc }, of.desc), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.ofertaSueldo }, "\u{1F4B0} ", of.sueldo, "/temp."), of.hinchadaHit ? /* @__PURE__ */ react_shim_default.createElement("div", { style: S.ofertaWarn }, "Hinchada ", of.hinchadaHit) : null, /* @__PURE__ */ react_shim_default.createElement("div", { style: { display: "flex", gap: 6, marginTop: 8 } }, of.negociable && /* @__PURE__ */ react_shim_default.createElement("button", { style: S.negBtn, onClick: () => setNeg(of) }, "Negociar"), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.aceptarBtn, onClick: () => onAceptar(of, of.sueldo) }, "Aceptar"))))));
+  }
+  function Negociacion({ of, state, onCerrar, onAceptar }) {
+    const [res, setRes] = useState(null);
+    const pedido = Math.round(of.sueldo * 1.4);
+    function jugar() {
+      const chance = 0.3 + (state.rep + state.stats.mentalidad + state.fama) / 400;
+      const exito = Math.random() < chance;
+      setRes(exito ? { ok: true, sueldo: pedido } : { ok: false, sueldo: Math.round(of.sueldo * 0.9) });
+    }
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F91D} NEGOCIACI\xD3N \xB7 ", of.club.n), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, "Base \u{1F4B0}", of.sueldo, ". Ped\xEDs \u{1F4B0}", pedido, ". Influyen rep (", state.rep, "), mentalidad (", state.stats.mentalidad, ") y fama (", state.fama, ")."), res === null ? /* @__PURE__ */ react_shim_default.createElement("div", { style: { display: "flex", gap: 10 } }, /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnPrimary, onClick: jugar }, "Exigir \u{1F4B0}", pedido), /* @__PURE__ */ react_shim_default.createElement("button", { style: { ...S.negBtn, flex: 1 }, onClick: onCerrar }, "Volver")) : /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.miniRes, color: res.ok ? COL.accent : COL.danger, fontSize: 20 } }, res.ok ? `\u2705 \xA1Aceptaron! \u{1F4B0}${res.sueldo}` : `\u{1F615} Se plantaron. \u{1F4B0}${res.sueldo}`), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnPrimary, onClick: () => onAceptar(of, res.sueldo) }, "Firmar")));
+  }
+  function CrisisInstitucional({ state, onResolver }) {
+    const protegido = STAFF.manager.niveles[state.staff.manager].protegeCrisis;
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.evTag, color: COL.danger } }, "\u{1F4C9} CRISIS INSTITUCIONAL", state._combo ? " + QUIEBRA PERSONAL" : ""), state._combo ? /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, "\u{1F480} ", /* @__PURE__ */ react_shim_default.createElement("b", null, "Est\xE1s al horno."), " ", state.club.n, " est\xE1 fundido y te tiene que vender... y vos est\xE1s quebrado (\u{1F4B0}", state.plata, "). No hay colch\xF3n para negociar. Eleg\xED como puedas.") : /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, state.club.n, " viene sin t\xEDtulos y necesita vender para equilibrar las cuentas. Tu situaci\xF3n se define ahora."), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evOpciones }, /* @__PURE__ */ react_shim_default.createElement("button", { className: "evOpt", style: S.evOpcion, onClick: () => onResolver("bajarSueldo") }, /* @__PURE__ */ react_shim_default.createElement("span", null, "\u{1F4B8} Bajar tu sueldo y quedarte (vestuario lo valora)")), /* @__PURE__ */ react_shim_default.createElement("button", { className: "evOpt", style: S.evOpcion, onClick: () => onResolver("aguantar") }, /* @__PURE__ */ react_shim_default.createElement("span", null, "\u{1F6E1}\uFE0F Aguantar y esperar salida ", protegido ? "(tu representante te cubre)" : "(\u26A0\uFE0F sin representante, riesgo de quedar libre)"))));
+  }
+  function TorneoView({ torneo, state, onJugar, onMini }) {
+    const esClave = torneo.partido >= torneo.partidos - 2;
+    const lider = state.stats.liderazgo >= 70;
+    const decisiones = [
+      { txt: "\u26A1 Jugar al contragolpe (velocidad)", bonus: state.stats.velocidad > 70 ? 15 : 0 },
+      { txt: "\u{1F3AF} Buscar el gol individual", mini: pick(POSICIONES[state.pos].minis) },
+      { txt: "\u{1F9E9} Control y posesi\xF3n (pase)", bonus: state.stats.pase > 70 ? 12 : 0 }
+    ];
+    if (esClave && lider) decisiones.push({ txt: "\u{1F525} Arenga de capit\xE1n: liderar la remontada (favor de l\xEDder)", bonus: 30 });
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.evTag, color: COL.gold } }, torneo.emoji, " ", torneo.nombre.toUpperCase()), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.torneoProgress }, Array.from({ length: torneo.partidos }).map((_, i) => /* @__PURE__ */ react_shim_default.createElement("div", { key: i, style: { ...S.torneoDot, ...i < torneo.partido ? S.torneoDotDone : {}, ...i === torneo.partido ? S.torneoDotNow : {} } }, i < torneo.partido ? "\u2713" : i + 1))), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, "Partido ", torneo.partido + 1, "/", torneo.partidos, " \xB7 Ganados: ", torneo.ganados, ". ", esClave ? "\u{1F525} \xA1Partido decisivo!" : "\xBFC\xF3mo lo encar\xE1s?"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evOpciones }, decisiones.map((d, i) => /* @__PURE__ */ react_shim_default.createElement("button", { key: i, className: "evOpt", style: S.evOpcion, onClick: () => d.mini ? onMini(d.mini, d.txt) : onJugar(d) }, /* @__PURE__ */ react_shim_default.createElement("span", null, d.txt), /* @__PURE__ */ react_shim_default.createElement("span", { style: { display: "flex", gap: 6 } }, d.bonus > 0 && /* @__PURE__ */ react_shim_default.createElement("span", { style: S.reqTag }, "+", d.bonus, "%"), d.mini && /* @__PURE__ */ react_shim_default.createElement("span", { style: S.miniTag }, "\u{1F3AE}"))))));
+  }
+  function Final({ state: s, onReiniciar }) {
+    const media = calcMediaEf(s);
+    const ley = calcLeyenda(s);
+    const legado = calcLegado(s, ley);
+    const comp = calcComparacion(s, media, ley);
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.wrap }, /* @__PURE__ */ react_shim_default.createElement("style", null, CSS), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.finalBox }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.introTag }, "FIN DE LA CARRERA"), /* @__PURE__ */ react_shim_default.createElement("h1", { style: { ...S.introTitle, fontSize: 44 } }, s.nombre), s.apodo && /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 18, fontStyle: "italic", color: COL.accent, marginBottom: 4 } }, '"', s.apodo, '"'), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.finalLegado }, legado.emoji, " ", legado.titulo), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.finalComp }, "Te comparan con ", /* @__PURE__ */ react_shim_default.createElement("b", { style: { color: COL.gold } }, comp)), s.nemesis && (s.nemesis.balones > 0 || (s.premios.balonOro || 0) > 0) && /* @__PURE__ */ react_shim_default.createElement("div", { style: S.nemesisBox }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 11, letterSpacing: 2, color: COL.txt2 } }, "EL DUELO DE UNA \xC9POCA"), /* @__PURE__ */ react_shim_default.createElement("div", { style: { display: "flex", justifyContent: "center", gap: 20, marginTop: 6, alignItems: "center" } }, /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontFamily: "Anton, sans-serif", fontSize: 22, color: COL.gold } }, s.premios.balonOro || 0, " \u{1F3C5}"), /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 12 } }, "Vos")), /* @__PURE__ */ react_shim_default.createElement("div", { style: { color: COL.txt2 } }, "vs"), /* @__PURE__ */ react_shim_default.createElement("div", null, /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontFamily: "Anton, sans-serif", fontSize: 22 } }, s.nemesis.balones, " \u{1F3C5}"), /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 12, color: COL.txt2 } }, s.nemesis.nombre))), /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 12, color: COL.txt2, marginTop: 6 } }, (s.premios.balonOro || 0) > s.nemesis.balones ? "Ganaste la pulseada hist\xF3rica \u{1F60E}" : (s.premios.balonOro || 0) === s.nemesis.balones ? "Quedaron a mano, para el debate eterno" : `${s.nemesis.nombre} te gan\xF3 la pulseada \u{1F624}`)), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.finalStats }, /* @__PURE__ */ react_shim_default.createElement(FinalStat, { n: s.golesCarrera, l: "Goles" }), /* @__PURE__ */ react_shim_default.createElement(FinalStat, { n: s.asistCarrera, l: "Asistencias" }), /* @__PURE__ */ react_shim_default.createElement(FinalStat, { n: s.titulos, l: "T\xEDtulos liga" }), /* @__PURE__ */ react_shim_default.createElement(FinalStat, { n: s.titulosInt, l: "Int'l" }), /* @__PURE__ */ react_shim_default.createElement(FinalStat, { n: s.mundiales, l: "Mundiales" }), /* @__PURE__ */ react_shim_default.createElement(FinalStat, { n: s.premios.balonOro || 0, l: "Bal\xF3n de Oro" }), /* @__PURE__ */ react_shim_default.createElement(FinalStat, { n: s.selecGoles, l: "Goles selecci\xF3n" }), /* @__PURE__ */ react_shim_default.createElement(FinalStat, { n: media, l: "Media" }), /* @__PURE__ */ react_shim_default.createElement(FinalStat, { n: s.edad, l: "Retiro" })), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.puntajeBox }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.puntajeLbl }, "PUNTAJE LEYENDA \u{1F451}"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.puntajeNum }, ley), /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 12, color: COL.txt2, marginTop: 6 } }, ley > 2500 ? "\u{1F410} El mejor de la historia" : ley > 1500 ? "Entre los m\xE1s grandes" : ley > 700 ? "Un grande recordado" : "Una linda carrera")), s.vinculos && Object.keys(s.vinculos).length > 0 && /* @__PURE__ */ react_shim_default.createElement("div", { style: S.vincBox }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hitosTitle }, "\u{1F3DF}\uFE0F Tu paso por los clubes"), Object.values(s.vinculos).sort((a, b) => b.puntos - a.puntos).map((v) => {
+      const badge = { "\xEDdolo": ["\u{1F534}", "\xCDDOLO", COL.danger], "hist\xF3rico": ["\u{1F7E1}", "HIST\xD3RICO", COL.gold], "relevante": ["\u{1F535}", "RELEVANTE", "#5aa9ff"], "jugador": ["\u26AA", "JUGADOR", COL.txt2] }[v.nivel] || ["\u26AA", "JUGADOR", COL.txt2];
+      return /* @__PURE__ */ react_shim_default.createElement("div", { key: v.n, style: S.vincRow }, /* @__PURE__ */ react_shim_default.createElement("span", null, v.n), /* @__PURE__ */ react_shim_default.createElement("span", { style: { color: badge[2], fontWeight: 700, fontSize: 12 } }, badge[0], " ", badge[1]));
+    })), s.hitos.length > 0 && /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hitosBox }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.hitosTitle }, "\u{1F4D6} Tu historia"), s.hitos.map((h, i) => /* @__PURE__ */ react_shim_default.createElement("div", { key: i, style: S.hitoLine }, "\u2022 ", h))), s.flags.length > 0 && /* @__PURE__ */ react_shim_default.createElement("div", { style: S.finalFlags }, s.flags.filter((f) => flagLabel(f)).map((f) => /* @__PURE__ */ react_shim_default.createElement("span", { key: f, style: S.flagChip }, flagLabel(f)))), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnPrimary, onClick: onReiniciar }, "Nueva carrera")));
+  }
+  function FinalStat({ n, l }) {
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.finalStatItem }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.finalStatNum }, n), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.finalStatLbl }, l));
+  }
+  function Minijuego({ tipo, state, onTerminar }) {
+    const T = {
+      penal: ["\u{1F3AE} PENAL", "remate", "\u26BD \xA1GOOOOL!", "\u{1F9E4} \xA1Atajado!", "Fren\xE1 en verde."],
+      cabezazo: ["\u{1F3AE} CABEZAZO", "salto", "\u26BD \xA1De cabeza, gol!", "\u{1F616} Afuera", "Timing del salto."],
+      atajada: ["\u{1F3AE} ATAJADA", "reflejos", "\u{1F9E4} \xA1ATAJAD\xD3N!", "\u26BD Gol en contra", "Reaccion\xE1 a tiempo."],
+      control: ["\u{1F3AE} CONTROL", "pase", "\u{1F3AF} \xA1Control perfecto!", "\u{1F62C} La perd\xE9s", "Amortigu\xE1 justo."]
+    };
+    if (T[tipo]) {
+      const [t, sk, ok, no, d] = T[tipo];
+      return /* @__PURE__ */ react_shim_default.createElement(MiniTiming, { state, onTerminar, titulo: t, skill: sk, txtOk: ok, txtNo: no, desc: d });
+    }
+    if (tipo === "gambeta") return /* @__PURE__ */ react_shim_default.createElement(MiniGambeta, { state, onTerminar });
+    if (tipo === "tiro") return /* @__PURE__ */ react_shim_default.createElement(MiniTiro, { state, onTerminar });
+    if (tipo === "memoria") return /* @__PURE__ */ react_shim_default.createElement(MiniMemoria, { state, onTerminar });
+    if (tipo === "secuencia") return /* @__PURE__ */ react_shim_default.createElement(MiniSecuencia, { state, onTerminar });
+    if (tipo === "reflejos") return /* @__PURE__ */ react_shim_default.createElement(MiniReflejos, { state, onTerminar });
+    if (tipo === "tateti") return /* @__PURE__ */ react_shim_default.createElement(MiniTaTeTi, { state, onTerminar });
+    if (tipo === "ppt") return /* @__PURE__ */ react_shim_default.createElement(MiniPPT, { state, onTerminar });
+    if (tipo === "tanda") return /* @__PURE__ */ react_shim_default.createElement(MiniTanda, { state, onTerminar });
+    if (tipo === "carril") return /* @__PURE__ */ react_shim_default.createElement(MiniCarril, { state, onTerminar });
+    if (tipo === "cabeza") return /* @__PURE__ */ react_shim_default.createElement(MiniCabeza, { state, onTerminar });
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnPrimary, onClick: () => onTerminar(true) }, "Ok"));
+  }
+  function MiniTiming({ state, onTerminar, titulo, skill, txtOk, txtNo, desc }) {
+    const [pos, setPos] = useState(0);
+    const [res, setRes] = useState(null);
+    const sk = state.stats[skill];
+    const zona = 16 + sk / 8;
+    const raf = useRef();
+    const pr = useRef(0);
+    const dr = useRef(1);
+    const on = useRef(true);
+    useEffect(() => {
+      let last = performance.now();
+      const speed = 0.09 + (99 - sk) / 900;
+      const loop = (t) => {
+        const dt = t - last;
+        last = t;
+        if (on.current) {
+          let np = pr.current + dr.current * speed * dt;
+          if (np > 100) {
+            np = 100;
+            dr.current = -1;
+          }
+          if (np < 0) {
+            np = 0;
+            dr.current = 1;
+          }
+          pr.current = np;
+          setPos(np);
+        }
+        raf.current = requestAnimationFrame(loop);
+      };
+      raf.current = requestAnimationFrame(loop);
+      return () => cancelAnimationFrame(raf.current);
+    }, [sk]);
+    function go() {
+      on.current = false;
+      const gol = Math.abs(pr.current - 50) <= zona / 2;
+      setRes(gol);
+      setTimeout(() => onTerminar(gol), 1300);
+    }
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, titulo), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, desc, " Tu ", STAT_LABELS[skill], " (", sk, ") agranda la zona."), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.penalTrack }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.penalZona, left: `${50 - zona / 2}%`, width: `${zona}%` } }), /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.penalMarker, left: `${pos}%` } })), res === null ? /* @__PURE__ */ react_shim_default.createElement("button", { style: { ...S.btnPrimary, marginTop: 24 }, onClick: go }, "\xA1DALE!") : /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.miniRes, color: res ? COL.accent : COL.danger } }, res ? txtOk : txtNo));
+  }
+  function MiniGambeta({ state, onTerminar }) {
+    const [res, setRes] = useState(null);
+    const m = [{ e: "\u{1F57A}", l: "Amague" }, { e: "\u{1F9B5}", l: "Ca\xF1o" }, { e: "\u{1F4A8}", l: "Pique" }];
+    function jugar() {
+      const g = Math.random() < 0.4 + state.stats.gambeta / 130;
+      setRes(g);
+      setTimeout(() => onTerminar(g), 1300);
+    }
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F3AE} DUELO 1v1"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, "Eleg\xED tu movida. Gambeta (", state.stats.gambeta, ") da ventaja."), res === null ? /* @__PURE__ */ react_shim_default.createElement("div", { style: S.gambetaGrid }, m.map((x, i) => /* @__PURE__ */ react_shim_default.createElement("button", { key: i, style: S.gambetaBtn, onClick: jugar }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 30 } }, x.e), x.l))) : /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.miniRes, color: res ? COL.accent : COL.danger } }, res ? "\u{1F525} \xA1Lo pas\xF3!" : "\u{1F6D1} Se la robaron."));
+  }
+  function MiniTiro({ state, onTerminar }) {
+    const [ang, setAng] = useState(50);
+    const [pot, setPot] = useState(50);
+    const [fase, setFase] = useState("ang");
+    const [res, setRes] = useState(null);
+    const raf = useRef();
+    const vr = useRef(50);
+    const dr = useRef(1);
+    const fr = useRef("ang");
+    useEffect(() => {
+      let last = performance.now();
+      const speed = 0.08;
+      const loop = (t) => {
+        const dt = t - last;
+        last = t;
+        const f = fr.current;
+        if (f === "ang" || f === "pot") {
+          let np = vr.current + dr.current * speed * dt;
+          if (np > 100) {
+            np = 100;
+            dr.current = -1;
+          }
+          if (np < 0) {
+            np = 0;
+            dr.current = 1;
+          }
+          vr.current = np;
+          if (f === "ang") setAng(np);
+          else setPot(np);
+        }
+        raf.current = requestAnimationFrame(loop);
+      };
+      raf.current = requestAnimationFrame(loop);
+      return () => cancelAnimationFrame(raf.current);
+    }, []);
+    function fijar() {
+      if (fase === "ang") {
+        vr.current = 50;
+        dr.current = 1;
+        fr.current = "pot";
+        setFase("pot");
+      } else {
+        fr.current = "res";
+        const sk = state.stats.remate;
+        const aOk = ang > 60 && ang < 92;
+        const pOk = pot > 45 && pot < 88;
+        const gol = aOk && pOk || aOk && Math.random() < sk / 160;
+        setRes(gol);
+        setFase("res");
+        setTimeout(() => onTerminar(gol), 1400);
+      }
+    }
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F3AE} TIRO LIBRE"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, fase === "ang" ? "Apunt\xE1 al \xE1ngulo." : fase === "pot" ? "Potencia justa." : "..."), /* @__PURE__ */ react_shim_default.createElement("div", { style: { display: "grid", gap: 14, margin: "10px 0 20px" } }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.tiroMeta }, /* @__PURE__ */ react_shim_default.createElement("span", null, "\xC1ngulo"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.penalTrack }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.penalZona, left: "60%", width: "32%" } }), /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.penalMarker, left: `${ang}%` } }))), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.tiroMeta }, /* @__PURE__ */ react_shim_default.createElement("span", null, "Potencia"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.penalTrack }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.penalZona, left: "45%", width: "43%" } }), /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.penalMarker, left: `${pot}%` } })))), fase !== "res" ? /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnPrimary, onClick: fijar }, fase === "ang" ? "Fijar \xE1ngulo" : "\xA1PEGARLE!") : /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.miniRes, color: res ? COL.accent : COL.danger } }, res ? "\u26BD \xA1GOLAZO!" : "\u{1F616} Afuera."));
+  }
+  function MiniMemoria({ state, onTerminar }) {
+    const emojis = ["\u26BD", "\u{1F3C6}", "\u{1F945}", "\u{1F45F}", "\u{1F9E4}", "\u{1F3BD}"];
+    const [cartas] = useState(() => {
+      const d = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
+      return d.map((e, i) => ({ id: i, e, flip: false, done: false }));
+    });
+    const [estado, setEstado] = useState(cartas);
+    const [sel, setSel] = useState([]);
+    const [intentos, setIntentos] = useState(0);
+    const [res, setRes] = useState(null);
+    const maxIntentos = 10;
+    function clickCarta(i) {
+      if (res !== null || estado[i].flip || estado[i].done || sel.length >= 2) return;
+      const ne = estado.map((c, j) => j === i ? { ...c, flip: true } : c);
+      setEstado(ne);
+      const nsel = [...sel, i];
+      setSel(nsel);
+      if (nsel.length === 2) {
+        setIntentos((x) => x + 1);
+        const [a, b] = nsel;
+        if (ne[a].e === ne[b].e) {
+          setTimeout(() => {
+            const done = ne.map((c, j) => j === a || j === b ? { ...c, done: true } : c);
+            setEstado(done);
+            setSel([]);
+            if (done.every((c) => c.done)) {
+              setRes(true);
+              setTimeout(() => onTerminar(true), 1200);
+            }
+          }, 500);
+        } else {
+          setTimeout(() => {
+            setEstado(ne.map((c, j) => j === a || j === b ? { ...c, flip: false } : c));
+            setSel([]);
+            if (intentos + 1 >= maxIntentos) {
+              setRes(false);
+              setTimeout(() => onTerminar(false), 1200);
+            }
+          }, 700);
+        }
+      }
+    }
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F3AE} MEMORIA \xB7 CONCENTRACI\xD3N"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, "Encontr\xE1 los pares antes de ", maxIntentos, " intentos. (Intentos: ", intentos, ")"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.memGrid }, estado.map((c, i) => /* @__PURE__ */ react_shim_default.createElement("button", { key: c.id, onClick: () => clickCarta(i), style: { ...S.memCarta, ...c.flip || c.done ? S.memCartaFlip : {}, ...c.done ? { opacity: 0.5 } : {} } }, c.flip || c.done ? c.e : "\u2753"))), res !== null && /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.miniRes, color: res ? COL.accent : COL.danger } }, res ? "\u{1F9E0} \xA1Concentraci\xF3n total!" : "\u{1F635} Te dispersaste."));
+  }
+  function MiniSecuencia({ state, onTerminar }) {
+    const colores = [{ c: "#4fd18b", k: 0 }, { c: "#5aa9ff", k: 1 }, { c: "#ffd23f", k: 2 }, { c: "#ff6b9d", k: 3 }];
+    const largo = 4;
+    const [seq] = useState(() => Array.from({ length: largo }, () => rnd(0, 3)));
+    const [mostrando, setMostrando] = useState(true);
+    const [idx, setIdx] = useState(0);
+    const [activo, setActivo] = useState(-1);
+    const [userSeq, setUserSeq] = useState([]);
+    const [res, setRes] = useState(null);
+    useEffect(() => {
+      if (!mostrando) return;
+      let i = 0;
+      const iv = setInterval(() => {
+        setActivo(seq[i]);
+        setTimeout(() => setActivo(-1), 400);
+        i++;
+        if (i >= seq.length) {
+          clearInterval(iv);
+          setTimeout(() => setMostrando(false), 500);
+        }
+      }, 700);
+      return () => clearInterval(iv);
+    }, [mostrando, seq]);
+    function click(k) {
+      if (mostrando || res !== null) return;
+      const nu = [...userSeq, k];
+      setUserSeq(nu);
+      if (seq[nu.length - 1] !== k) {
+        setRes(false);
+        setTimeout(() => onTerminar(false), 1e3);
+        return;
+      }
+      if (nu.length === seq.length) {
+        setRes(true);
+        setTimeout(() => onTerminar(true), 1e3);
+      }
+    }
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F3AE} SECUENCIA \xB7 VISI\xD3N DE JUEGO"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, mostrando ? "Memoriz\xE1 la secuencia..." : "\xA1Repetila!"), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.seqGrid }, colores.map((c) => /* @__PURE__ */ react_shim_default.createElement("button", { key: c.k, disabled: mostrando, onClick: () => click(c.k), style: { ...S.seqBtn, background: c.c, opacity: activo === c.k ? 1 : 0.35, transform: activo === c.k ? "scale(1.05)" : "none" } }))), res !== null && /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.miniRes, color: res ? COL.accent : COL.danger } }, res ? "\u{1F3AF} \xA1Jugada perfecta!" : "\u{1F616} Perdiste el hilo."));
+  }
+  function MiniReflejos({ state, onTerminar }) {
+    const [estado, setEstado] = useState("wait");
+    const [res, setRes] = useState(null);
+    const t0 = useRef(0);
+    useEffect(() => {
+      const d = rnd(1200, 3e3);
+      const to = setTimeout(() => {
+        setEstado("go");
+        t0.current = performance.now();
+      }, d);
+      return () => clearTimeout(to);
+    }, []);
+    function click() {
+      if (estado === "wait") {
+        setRes(false);
+        setEstado("done");
+        setTimeout(() => onTerminar(false), 1e3);
+      } else if (estado === "go") {
+        const rt = performance.now() - t0.current;
+        const umbral = 500 + (99 - state.stats.reflejos) * 4;
+        const ok = rt < umbral;
+        setRes(ok);
+        setEstado("done");
+        setTimeout(() => onTerminar(ok), 1e3);
+      }
+    }
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F3AE} REFLEJOS"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, "Toc\xE1 apenas se ponga verde. Reflejos (", state.stats.reflejos, ") te dan m\xE1s margen."), /* @__PURE__ */ react_shim_default.createElement("button", { onClick: click, style: { ...S.reflejoBox, background: estado === "go" ? COL.accent : estado === "wait" ? COL.danger : COL.panel2 } }, estado === "wait" ? "Esper\xE1..." : estado === "go" ? "\xA1YA!" : res ? "\u2705 \xA1Reflejo felino!" : "\u274C Muy lento / adelantado"));
+  }
+  function MiniTaTeTi({ state, onTerminar }) {
+    const [b, setB] = useState(Array(9).fill(null));
+    const [res, setRes] = useState(null);
+    const torpeza = clamp(0.15 + (state.stats.mentalidad - 50) / 120, 0.1, 0.6);
+    function ganador(bd) {
+      const L = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+      for (const [x, y, z] of L) if (bd[x] && bd[x] === bd[y] && bd[y] === bd[z]) return bd[x];
+      if (bd.every(Boolean)) return "empate";
+      return null;
+    }
+    function iaMueve(bd) {
+      const libres = bd.map((v, i) => v ? null : i).filter((v) => v !== null);
+      if (libres.length === 0) return bd;
+      if (Math.random() > torpeza) {
+        for (const cand of ["O", "X"]) for (const i of libres) {
+          const t2 = [...bd];
+          t2[i] = cand;
+          if (ganador(t2) === "O" && cand === "O") return t2;
+        }
+        for (const i of libres) {
+          const t2 = [...bd];
+          t2[i] = "X";
+          if (ganador(t2) === "X") {
+            const t22 = [...bd];
+            t22[i] = "O";
+            return t22;
+          }
+        }
+      }
+      const t = [...bd];
+      t[pick(libres)] = "O";
+      return t;
+    }
+    function jugar(i) {
+      if (b[i] || res) return;
+      let nb = [...b];
+      nb[i] = "X";
+      let g = ganador(nb);
+      if (!g) nb = iaMueve(nb);
+      g = ganador(nb);
+      setB(nb);
+      if (g) {
+        const ok = g === "X" || g === "empate";
+        setRes(g);
+        setTimeout(() => onTerminar(ok), 1200);
+      }
+    }
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F3AE} TA-TE-TI \xB7 PICADO MENTAL"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, "Ganale (o empatale) al rival. Tu mentalidad (", state.stats.mentalidad, ") lo hace equivocarse m\xE1s. Sos las \u274C."), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.tatetiGrid }, b.map((v, i) => /* @__PURE__ */ react_shim_default.createElement("button", { key: i, style: S.tatetiCell, onClick: () => jugar(i) }, v))), res && /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.miniRes, color: res === "X" || res === "empate" ? COL.accent : COL.danger } }, res === "X" ? "\u2705 \xA1Le ganaste!" : res === "empate" ? "\u{1F91D} Empate, zaf\xE1s" : "\u274C Te gan\xF3"));
+  }
+  function MiniPPT({ state, onTerminar }) {
+    const opc = [{ k: "piedra", e: "\u270A" }, { k: "papel", e: "\u270B" }, { k: "tijera", e: "\u270C\uFE0F" }];
+    const gana = { piedra: "tijera", papel: "piedra", tijera: "papel" };
+    const [tu, setTu] = useState(0);
+    const [ella, setElla] = useState(0);
+    const [ultimo, setUltimo] = useState(null);
+    const [res, setRes] = useState(null);
+    function jugar(k) {
+      if (res) return;
+      const ia = pick(opc).k;
+      let msg;
+      let ntu = tu, nella = ella;
+      if (k === ia) msg = "Empate";
+      else if (gana[k] === ia) {
+        ntu++;
+        msg = "Gan\xE1s la mano";
+      } else {
+        nella++;
+        msg = "Perd\xE9s la mano";
+      }
+      setTu(ntu);
+      setElla(nella);
+      setUltimo({ tuya: opc.find((o) => o.k === k).e, suya: opc.find((o) => o.k === ia).e, msg });
+      if (ntu >= 2 || nella >= 2) {
+        const ok = ntu >= 2;
+        setRes(ok);
+        setTimeout(() => onTerminar(ok), 1300);
+      }
+    }
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F3AE} PIEDRA \xB7 PAPEL \xB7 TIJERA"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, "Al mejor de 3 para definir qui\xE9n patea el penal decisivo. Vos ", tu, " \u2014 ", ella, " Rival."), ultimo && /* @__PURE__ */ react_shim_default.createElement("div", { style: { textAlign: "center", fontSize: 28, margin: "6px 0" } }, ultimo.tuya, " vs ", ultimo.suya, /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 14, color: COL.txt2 } }, ultimo.msg)), !res ? /* @__PURE__ */ react_shim_default.createElement("div", { style: S.pptGrid }, opc.map((o) => /* @__PURE__ */ react_shim_default.createElement("button", { key: o.k, style: S.pptBtn, onClick: () => jugar(o.k) }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 34 } }, o.e), o.k))) : /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.miniRes, color: res ? COL.accent : COL.danger } }, res ? "\u2705 \xA1Ganaste el duelo!" : "\u274C Perdiste el duelo"));
+  }
+  function MiniTanda({ state, onTerminar }) {
+    const [ronda, setRonda] = useState(0);
+    const [goles, setGoles] = useState(0);
+    const [res, setRes] = useState(null);
+    const [ultimo, setUltimo] = useState(null);
+    const total = 3;
+    const dirs = [{ k: 0, e: "\u2B05\uFE0F", l: "Izquierda" }, { k: 1, e: "\u2B06\uFE0F", l: "Medio" }, { k: 2, e: "\u27A1\uFE0F", l: "Derecha" }];
+    function patear(d) {
+      if (res) return;
+      const arquero = rnd(0, 2);
+      const precision = state.stats.remate / 99;
+      let gol;
+      if (arquero === d) gol = Math.random() < 0.35 * precision;
+      else gol = Math.random() < 0.85 + 0.1 * precision;
+      const ng = goles + (gol ? 1 : 0);
+      setGoles(ng);
+      setUltimo({ tuya: dirs[d].e, arquero: dirs[arquero].e, gol });
+      const nr = ronda + 1;
+      if (nr >= total) {
+        const ok = ng >= 2;
+        setRes(ok);
+        setTimeout(() => onTerminar(ok), 1400);
+      } else setRonda(nr);
+    }
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F3AE} TANDA DE PENALES"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, "Penal ", ronda + 1, "/", total, " \xB7 Convertidos: ", goles, ". Eleg\xED d\xF3nde patear. Remate (", state.stats.remate, ") ayuda."), ultimo && /* @__PURE__ */ react_shim_default.createElement("div", { style: { textAlign: "center", fontSize: 26, margin: "4px 0" } }, "Vos ", ultimo.tuya, " \xB7 \u{1F9E4} ", ultimo.arquero, " ", /* @__PURE__ */ react_shim_default.createElement("span", { style: { color: ultimo.gol ? COL.accent : COL.danger } }, ultimo.gol ? "\u26BD \xA1GOL!" : "\u274C Atajado")), !res ? /* @__PURE__ */ react_shim_default.createElement("div", { style: S.pptGrid }, dirs.map((d) => /* @__PURE__ */ react_shim_default.createElement("button", { key: d.k, style: S.pptBtn, onClick: () => patear(d.k) }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { fontSize: 30 } }, d.e), d.l))) : /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.miniRes, color: res ? COL.accent : COL.danger } }, res ? "\u2705 \xA1Serie ganada!" : "\u274C Fallaste la tanda"));
+  }
+  function MiniCarril({ state, onTerminar }) {
+    const [ronda, setRonda] = useState(0);
+    const [pasadas, setPasadas] = useState(0);
+    const [bloqueado, setBloqueado] = useState(-1);
+    const [res, setRes] = useState(null);
+    const [feedback, setFeedback] = useState(null);
+    const total = 3;
+    useEffect(() => {
+      if (res !== null) return;
+      const t = setTimeout(() => setBloqueado(rnd(0, 2)), 300);
+      return () => clearTimeout(t);
+    }, [ronda, res]);
+    function elegir(carril) {
+      if (res !== null || bloqueado === -1) return;
+      const skill = (state.stats.velocidad + state.stats.gambeta) / 2;
+      let paso;
+      if (carril === bloqueado) paso = Math.random() < skill / 250;
+      else paso = Math.random() < 0.8 + skill / 500;
+      const np = pasadas + (paso ? 1 : 0);
+      setPasadas(np);
+      setFeedback(paso ? "\u{1F4A8} \xA1Lo dejaste pagando!" : "\u{1F6D1} Te lo comi\xF3 el defensor");
+      const nr = ronda + 1;
+      if (nr >= total) {
+        const ok = np >= 2;
+        setRes(ok);
+        setTimeout(() => onTerminar(ok), 1300);
+      } else {
+        setTimeout(() => {
+          setBloqueado(-1);
+          setFeedback(null);
+          setRonda(nr);
+        }, 700);
+      }
+    }
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F3AE} PIQUE POR EL CARRIL"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, "Tramo ", ronda + 1, "/", total, " \xB7 Pasaste ", pasadas, ". El \u{1F6D1} marca el carril tapado \u2014 metete por el hueco. Velocidad + gambeta ayudan."), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.carrilGrid }, [0, 1, 2].map((c) => /* @__PURE__ */ react_shim_default.createElement("button", { key: c, disabled: bloqueado === -1 || res !== null, style: { ...S.carrilBtn, ...bloqueado === c ? S.carrilBloq : {} }, onClick: () => elegir(c) }, bloqueado === c ? "\u{1F6D1}" : "\u{1F7E2}"))), feedback && /* @__PURE__ */ react_shim_default.createElement("div", { style: { textAlign: "center", fontSize: 15, marginTop: 8 } }, feedback), res !== null && /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.miniRes, color: res ? COL.accent : COL.danger } }, res ? "\u2705 \xA1La rompiste!" : "\u274C Te quedaste"));
+  }
+  function MiniCabeza({ state, onTerminar }) {
+    const [pos, setPos] = useState(0);
+    const [res, setRes] = useState(null);
+    const sk = state.stats.salto;
+    const zona = 14 + sk / 7;
+    const pr = useRef(0);
+    const dr = useRef(1);
+    const on = useRef(true);
+    const raf = useRef();
+    useEffect(() => {
+      let last = performance.now();
+      const speed = 0.11 + (99 - sk) / 700;
+      const loop = (t) => {
+        const dt = t - last;
+        last = t;
+        if (on.current) {
+          let np = pr.current + dr.current * speed * dt;
+          if (np > 100) {
+            np = 100;
+            dr.current = -1;
+          }
+          if (np < 0) {
+            np = 0;
+            dr.current = 1;
+          }
+          pr.current = np;
+          setPos(np);
+        }
+        raf.current = requestAnimationFrame(loop);
+      };
+      raf.current = requestAnimationFrame(loop);
+      return () => cancelAnimationFrame(raf.current);
+    }, [sk]);
+    function saltar() {
+      on.current = false;
+      const gol = Math.abs(pr.current - 50) <= zona / 2;
+      setRes(gol);
+      setTimeout(() => onTerminar(gol), 1300);
+    }
+    return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evCard }, /* @__PURE__ */ react_shim_default.createElement("div", { style: S.evTag }, "\u{1F3AE} DUELO A\xC9REO"), /* @__PURE__ */ react_shim_default.createElement("p", { style: S.evTexto }, "Salto por el centro del \xE1rea. Fren\xE1 la barra en el momento justo. Salto (", sk, ") agranda la zona."), /* @__PURE__ */ react_shim_default.createElement("div", { style: S.penalTrack }, /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.penalZona, left: `${50 - zona / 2}%`, width: `${zona}%` } }), /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.penalMarker, left: `${pos}%` } })), res === null ? /* @__PURE__ */ react_shim_default.createElement("button", { style: { ...S.btnPrimary, marginTop: 20 }, onClick: saltar }, "\xA1CABECEAR!") : /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.miniRes, color: res ? COL.accent : COL.danger } }, res ? "\u26BD \xA1Gol de cabeza!" : "\u{1F616} Le pegaste mal"));
+  }
+  function flagLabel(f) {
+    return { capitan: "\u{1F396}\uFE0F Capit\xE1n", seleccionado: "\u{1F1E6}\u{1F1F7} Seleccionado", traidor: "\u{1F40D} Traidor", europeo: "\u2708\uFE0F Trotamundos", familiero: "\u2764\uFE0F Familiero", benefactor: "\u{1F91D} Benefactor", clausula: "\u{1F4C4} Con cl\xE1usula" }[f] || "";
+  }
+  function calcLegado(s, ley) {
+    if (s.mundiales >= 1 && (s.premios.balonOro || 0) >= 2 && ley > 2500) return { emoji: "\u{1F410}", titulo: "EL MEJOR DE LA HISTORIA" };
+    if (s.flags.includes("traidor") && s.hinchada < 30) return { emoji: "\u{1F40D}", titulo: "El Traidor que nadie olvida" };
+    if (ley > 1800) return { emoji: "\u{1F451}", titulo: "Leyenda eterna del f\xFAtbol" };
+    if (ley > 1e3) return { emoji: "\u2B50", titulo: "Gran figura, respeto ganado" };
+    if (ley > 500) return { emoji: "\u26BD", titulo: "Jugador querido y recordado" };
+    return { emoji: "\u{1F331}", titulo: "Un jugador que la pele\xF3" };
+  }
+  function calcComparacion(s, media, ley) {
+    if (ley > 2500) return "los m\xE1s grandes de todos los tiempos";
+    if (s.mundiales >= 1) return "un campe\xF3n del mundo hist\xF3rico";
+    if (media >= 88) return "un crack de \xE9poca";
+    if (s.pos === "MED" && s.asistCarrera > 80) return "un enganche de los que ya no hay";
+    if (s.pos === "DEL" && s.golesCarrera > 150) return "un killer del \xE1rea";
+    if (s.flags.includes("europeo")) return "un exitoso trotamundos";
+    return "un jugador de buen recorrido";
+  }
+  var COL = { bg: "#0B0E14", bg2: "#121620", panel: "#151A26", panel2: "#1C2334", line: "#2A3040", txt: "#EAEEF7", txt2: "#8A93A8", accent: "#3DDC84", gold: "#F5C451", danger: "#FF5C6C", reflector: "#E8FF3D" };
+  var CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Sora:wght@400;500;600;700;800&display=swap');
+  * { box-sizing: border-box; }
+  .spin { font-size: 48px; animation: spin 1.2s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .evIn { animation: evIn .35s cubic-bezier(.2,.8,.3,1); }
+  @keyframes evIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .notifIn { animation: notifIn .5s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes notifIn { 0% { opacity: 0; transform: translateY(-40px) scale(.85); } 100% { opacity: 1; transform: none; } }
+  .logHeader { color: ${COL.reflector} !important; font-weight: 700 !important; margin-top: 6px; letter-spacing: .3px; }
+  button { transition: transform .12s ease, background .18s ease, border-color .18s ease; }
+  button:active { transform: scale(.97); }
+  button:focus-visible { outline: 2px solid ${COL.accent}; outline-offset: 2px; }
+  .evOpt:hover { border-left-color: ${COL.accent} !important; background: ${COL.panel2} !important; }
+  /* c\xE9sped sutil detr\xE1s del HUD (l\xEDneas de cancha vista desde arriba) */
+  .pitchbg { position: relative; overflow: hidden; }
+  .pitchbg::before { content:""; position:absolute; inset:0; opacity:.05; pointer-events:none;
+    background-image: repeating-linear-gradient(90deg, transparent 0 38px, ${COL.accent} 38px 39px); }
+  .pitchbg::after { content:""; position:absolute; top:50%; left:50%; width:130px; height:130px; transform:translate(-50%,-50%);
+    border:1px solid ${COL.accent}; border-radius:50%; opacity:.06; pointer-events:none; }
+  @media (max-width: 760px) { .mgrid { grid-template-columns: 1fr !important; } }
+  @media (prefers-reduced-motion: reduce) { *, .evIn, .notifIn, .spin { animation: none !important; transition: none !important; } }
+`;
+  var S = {
+    wrap: { minHeight: "100vh", background: `radial-gradient(1200px 500px at 50% -10%, #1a2740 0%, ${COL.bg} 55%)`, color: COL.txt, fontFamily: "Sora, system-ui, sans-serif", padding: 16 },
+    notifOverlay: { position: "fixed", top: 0, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", paddingTop: 24, zIndex: 1e3, pointerEvents: "auto" },
+    notifCard: { background: `linear-gradient(135deg, ${COL.gold}, #c99a1f)`, color: "#1a1200", borderRadius: 18, padding: "18px 30px", textAlign: "center", boxShadow: "0 16px 50px rgba(0,0,0,.6)", maxWidth: 380, cursor: "default", border: "2px solid #ffe9a8" },
+    notifBtn: { marginTop: 12, padding: "9px 22px", borderRadius: 10, border: "none", background: "#1a1200", color: "#ffe9a8", fontWeight: 800, fontSize: 14, cursor: "pointer", fontFamily: "inherit" },
+    notifContador: { marginTop: 8, fontSize: 11, color: COL.txt2, background: COL.panel, padding: "3px 12px", borderRadius: 12, border: `1px solid ${COL.line}` },
+    notifEmoji: { fontSize: 44, lineHeight: 1 },
+    notifTitulo: { fontFamily: "Anton, sans-serif", fontSize: 24, letterSpacing: 1, marginTop: 4 },
+    notifSub: { fontSize: 13, fontWeight: 600, marginTop: 2, opacity: 0.85 },
+    mainGrid: { display: "grid", gridTemplateColumns: "1fr 320px", gap: 16, maxWidth: 1120, margin: "16px auto", alignItems: "start" },
+    centro: { minHeight: 360 },
+    introBox: { maxWidth: 640, margin: "30px auto", background: COL.panel, border: `1px solid ${COL.line}`, borderRadius: 22, padding: "44px 36px", textAlign: "center", boxShadow: "0 24px 70px rgba(0,0,0,.55)" },
+    introTag: { fontSize: 12, letterSpacing: 4, color: COL.accent, fontWeight: 700, textTransform: "uppercase" },
+    introTitle: { fontFamily: "Anton, sans-serif", fontSize: 78, letterSpacing: 1, margin: "10px 0 6px", background: `linear-gradient(180deg, #fff 10%, ${COL.accent} 70%, ${COL.reflector})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", lineHeight: 0.95, textShadow: `0 0 40px rgba(61,220,132,.25)` },
+    introSub: { color: COL.txt2, fontSize: 16, lineHeight: 1.55, maxWidth: 480, margin: "0 auto 20px" },
+    introList: { listStyle: "none", padding: 0, textAlign: "left", maxWidth: 460, margin: "0 auto 24px", display: "grid", gap: 8, color: COL.txt, fontSize: 14 },
+    legal: { fontSize: 11, color: COL.txt2, marginTop: 16, opacity: 0.7 },
+    crearBox: { maxWidth: 560, margin: "40px auto", background: COL.panel, border: `1px solid ${COL.line}`, borderRadius: 22, padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,.5)" },
+    bienvBox: { maxWidth: 520, margin: "30px auto", background: COL.panel, border: `1px solid ${COL.line}`, borderRadius: 22, padding: 34, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,.5)" },
+    bienvAvatar: { fontSize: 64, lineHeight: 1 },
+    bienvNombre: { fontFamily: "Anton, sans-serif", fontSize: 32, letterSpacing: 1, marginTop: 8 },
+    bienvRol: { fontSize: 13, color: COL.accent, fontWeight: 600, marginBottom: 8 },
+    bienvCharla: { textAlign: "left", background: COL.bg2, borderRadius: 14, padding: 20, margin: "16px 0", fontSize: 15, lineHeight: 1.55, border: `1px solid ${COL.line}` },
+    h2: { fontFamily: "Anton, sans-serif", fontSize: 36, letterSpacing: 1, margin: "0 0 20px" },
+    label: { display: "block", fontSize: 12, color: COL.txt2, fontWeight: 600, margin: "14px 0 6px", letterSpacing: 1, textTransform: "uppercase" },
+    input: { width: "100%", padding: "12px 14px", borderRadius: 10, border: `1px solid ${COL.line}`, background: COL.bg, color: COL.txt, fontSize: 15, fontFamily: "inherit" },
+    posGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 4 },
+    posBtn: { background: COL.bg2, border: `1px solid ${COL.line}`, borderRadius: 14, padding: 14, cursor: "pointer", color: COL.txt, textAlign: "center" },
+    posBtnActive: { border: `2px solid ${COL.accent}`, background: COL.panel2, boxShadow: `0 0 0 3px rgba(61,220,132,.15)` },
+    posStats: { fontSize: 11, color: COL.txt2, marginTop: 4 },
+    btnPrimary: { width: "100%", marginTop: 16, padding: "15px 20px", borderRadius: 13, border: "none", background: `linear-gradient(135deg, ${COL.accent}, #2ba565)`, color: "#04160c", fontWeight: 800, fontSize: 16, cursor: "pointer", letterSpacing: 0.3, fontFamily: "inherit", boxShadow: "0 10px 30px rgba(61,220,132,.28)" },
+    btnGhost: { width: "100%", marginTop: 10, padding: "13px 20px", borderRadius: 13, border: `1px solid ${COL.line}`, background: "transparent", color: COL.txt, fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: "inherit" },
+    // HUD
+    hudFifa: { maxWidth: 1120, margin: "0 auto", background: `linear-gradient(180deg, ${COL.panel}, ${COL.bg2})`, border: `1px solid ${COL.line}`, borderRadius: 18, padding: 16, display: "flex", gap: 16, alignItems: "center", boxShadow: "0 8px 30px rgba(0,0,0,.4)" },
+    fifaCard: { width: 116, minWidth: 116, borderRadius: 16, padding: 13, background: `linear-gradient(165deg, #232c40, #141926)`, color: COL.txt, boxShadow: `0 8px 24px rgba(0,0,0,.4), inset 0 0 0 1px ${COL.gold}55`, borderTop: `2px solid ${COL.gold}`, position: "relative", zIndex: 1 },
+    fifaCardTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
+    fifaMedia: { fontFamily: "Anton, sans-serif", fontSize: 38, lineHeight: 0.9, color: COL.gold },
+    fifaPos: { fontSize: 12, fontWeight: 800, color: COL.accent },
+    fifaEmoji: { fontSize: 30 },
+    fifaName: { fontFamily: "Anton, sans-serif", fontSize: 18, marginTop: 8, letterSpacing: 0.5, textTransform: "uppercase", lineHeight: 1 },
+    fifaClub: { fontSize: 11, fontWeight: 600, color: COL.txt2 },
+    fifaApodo: { fontSize: 11, fontStyle: "italic", fontWeight: 700, marginTop: 2, color: COL.reflector },
+    fifaRacha: { fontSize: 10, fontWeight: 700, marginTop: 2 },
+    hudTopRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+    hudInfo: { fontSize: 13, color: COL.txt2 },
+    saveBtn: { padding: "6px 12px", borderRadius: 8, border: `1px solid ${COL.line}`, background: COL.bg2, color: COL.txt, cursor: "pointer", fontSize: 12, fontFamily: "inherit", fontWeight: 600 },
+    hudBars: { display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginBottom: 10 },
+    barLbl: { fontSize: 10, color: COL.txt2, marginBottom: 3 },
+    barTrack: { height: 6, background: COL.bg, borderRadius: 4, overflow: "hidden" },
+    barFill: { height: "100%", borderRadius: 4, transition: "width .4s" },
+    hudStats: { display: "flex", gap: 12, fontSize: 14, fontWeight: 700, flexWrap: "wrap" },
+    hudStat: {},
+    hudStatsTecnicos: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: "2px 12px", marginTop: 10, paddingTop: 10, borderTop: `1px solid ${COL.line}` },
+    statTecnico: { display: "flex", justifyContent: "space-between", fontSize: 12, padding: "1px 0" },
+    evCard: { background: `linear-gradient(180deg, ${COL.panel}, ${COL.bg2})`, border: `1px solid ${COL.line}`, borderRadius: 18, padding: 26, boxShadow: "0 10px 40px rgba(0,0,0,.35)" },
+    evTag: { fontSize: 11, letterSpacing: 2.5, color: COL.accent, fontWeight: 700, marginBottom: 12, textTransform: "uppercase" },
+    evTexto: { fontSize: 18, lineHeight: 1.55, margin: "0 0 22px", color: COL.txt },
+    evOpciones: { display: "grid", gap: 10 },
+    evOpcion: { textAlign: "left", padding: "15px 17px", borderRadius: 13, border: `1px solid ${COL.line}`, borderLeft: `3px solid ${COL.line}`, background: COL.bg2, color: COL.txt, fontSize: 15, cursor: "pointer", fontFamily: "inherit", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 },
+    reqTag: { fontSize: 10, color: COL.accent, background: "rgba(61,220,132,.13)", padding: "3px 9px", borderRadius: 20, whiteSpace: "nowrap", fontWeight: 600 },
+    miniTag: { fontSize: 12, color: COL.reflector, background: "rgba(232,255,61,.12)", padding: "3px 9px", borderRadius: 20 },
+    esperando: { textAlign: "center", padding: "80px 20px", color: COL.txt2 },
+    logPanel: { background: `linear-gradient(180deg, ${COL.panel}, ${COL.bg2})`, border: `1px solid ${COL.line}`, borderRadius: 18, overflow: "hidden", position: "sticky", top: 16, boxShadow: "0 10px 40px rgba(0,0,0,.35)" },
+    logTitle: { padding: "13px 16px", fontWeight: 700, borderBottom: `1px solid ${COL.line}`, fontSize: 13, letterSpacing: 1, textTransform: "uppercase", color: COL.txt2 },
+    logBody: { padding: 14, maxHeight: 460, overflowY: "auto", display: "flex", flexDirection: "column", gap: 7 },
+    logLine: { fontSize: 13, lineHeight: 1.5, color: COL.txt2 },
+    statGrid: { display: "grid", gap: 8, marginBottom: 8 },
+    statRow: { display: "grid", gridTemplateColumns: "90px 1fr 32px 36px", gap: 10, alignItems: "center" },
+    statName: { fontSize: 13, color: COL.txt2 },
+    statTrack: { height: 8, background: COL.bg, borderRadius: 4, overflow: "hidden" },
+    statFill: { height: "100%", background: `linear-gradient(90deg, ${COL.accent}, ${COL.gold})` },
+    statVal: { fontSize: 14, fontWeight: 700, textAlign: "right" },
+    plusBtn: { width: 30, height: 30, borderRadius: 8, border: "none", background: COL.accent, color: "#04160c", fontWeight: 800, fontSize: 18, cursor: "pointer" },
+    staffBlock: { marginBottom: 14, paddingBottom: 12, borderBottom: `1px solid ${COL.line}` },
+    staffHead: { fontWeight: 700, fontSize: 15, marginBottom: 8 },
+    staffDesc: { fontWeight: 400, color: COL.txt2, fontSize: 13 },
+    staffNiveles: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8 },
+    staffBtn: { position: "relative", padding: "10px 8px", borderRadius: 10, border: `1px solid ${COL.line}`, background: COL.bg2, color: COL.txt, cursor: "pointer", fontFamily: "inherit", textAlign: "center" },
+    staffBtnActive: { border: `2px solid ${COL.accent}`, background: COL.panel2 },
+    staffActivo: { fontSize: 9, letterSpacing: 1, color: COL.accent, marginTop: 3, fontWeight: 700 },
+    invRow: { display: "flex", gap: 8, alignItems: "center", marginBottom: 8, padding: 10, background: COL.bg2, borderRadius: 10, border: `1px solid ${COL.line}` },
+    boostGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10, marginBottom: 8 },
+    boostCard: { textAlign: "left", padding: 12, borderRadius: 12, border: `1px solid ${COL.line}`, background: COL.bg2, color: COL.txt, cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", gap: 3 },
+    boostCardOn: { border: `2px solid ${COL.accent}`, background: COL.panel2 },
+    unicoTag: { fontSize: 8, letterSpacing: 1, color: "#04160c", background: COL.gold, padding: "2px 6px", borderRadius: 8, fontWeight: 800, verticalAlign: "middle" },
+    invInput: { width: 60, padding: "8px", borderRadius: 8, border: `1px solid ${COL.line}`, background: COL.bg, color: COL.txt, fontFamily: "inherit", fontSize: 14 },
+    invBtn: { padding: "8px 12px", borderRadius: 8, border: "none", background: COL.accent, color: "#04160c", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13 },
+    ofertaGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 },
+    ofertaCard: { padding: 16, borderRadius: 12, border: `1px solid ${COL.line}`, background: COL.bg2 },
+    ofertaClub: { fontFamily: "Anton, sans-serif", fontSize: 20, letterSpacing: 0.5 },
+    ofertaNivel: { fontSize: 11, color: COL.accent, marginBottom: 6 },
+    ofertaDesc: { fontSize: 13, color: COL.txt2, minHeight: 34, marginBottom: 8 },
+    ofertaSueldo: { fontSize: 15, fontWeight: 700, color: COL.gold },
+    ofertaWarn: { fontSize: 12, color: COL.danger, marginTop: 4, fontWeight: 600 },
+    negBtn: { flex: 1, padding: "8px", borderRadius: 8, border: `1px solid ${COL.line}`, background: "transparent", color: COL.txt, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600 },
+    aceptarBtn: { flex: 1, padding: "8px", borderRadius: 8, border: "none", background: COL.accent, color: "#04160c", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700 },
+    torneoProgress: { display: "flex", gap: 8, marginBottom: 14, justifyContent: "center" },
+    torneoDot: { width: 34, height: 34, borderRadius: "50%", border: `2px solid ${COL.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: COL.txt2 },
+    torneoDotDone: { background: COL.accent, color: "#04160c", borderColor: COL.accent },
+    torneoDotNow: { borderColor: COL.gold, color: COL.gold, boxShadow: `0 0 10px ${COL.gold}` },
+    penalTrack: { position: "relative", height: 22, background: COL.bg, borderRadius: 11, overflow: "hidden", border: `1px solid ${COL.line}`, margin: "10px 0" },
+    penalZona: { position: "absolute", top: 0, bottom: 0, background: "rgba(79,209,139,.4)", borderLeft: `2px solid ${COL.accent}`, borderRight: `2px solid ${COL.accent}` },
+    penalMarker: { position: "absolute", top: -2, width: 4, height: 26, background: COL.gold, borderRadius: 2, boxShadow: `0 0 8px ${COL.gold}`, transform: "translateX(-2px)" },
+    miniRes: { textAlign: "center", fontFamily: "Anton, sans-serif", fontSize: 26, letterSpacing: 1, padding: "16px 0" },
+    gambetaGrid: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 },
+    gambetaBtn: { padding: 20, borderRadius: 12, border: `1px solid ${COL.line}`, background: COL.bg2, color: COL.txt, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 600 },
+    tiroMeta: { display: "grid", gap: 6, fontSize: 13, color: COL.txt2 },
+    memGrid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, maxWidth: 300, margin: "0 auto" },
+    memCarta: { aspectRatio: "1", borderRadius: 10, border: `1px solid ${COL.line}`, background: COL.bg2, fontSize: 26, cursor: "pointer", color: COL.txt },
+    memCartaFlip: { background: COL.panel2, border: `2px solid ${COL.accent}` },
+    seqGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, maxWidth: 260, margin: "10px auto" },
+    seqBtn: { aspectRatio: "1", borderRadius: 14, border: "none", cursor: "pointer", transition: "all .12s" },
+    reflejoBox: { width: "100%", minHeight: 120, borderRadius: 14, border: "none", color: "#04160c", fontFamily: "Anton, sans-serif", fontSize: 24, cursor: "pointer", marginTop: 10 },
+    tatetiGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, maxWidth: 220, margin: "10px auto" },
+    tatetiCell: { aspectRatio: "1", borderRadius: 10, border: `1px solid ${COL.line}`, background: COL.bg2, fontSize: 30, fontWeight: 800, color: COL.txt, cursor: "pointer" },
+    pptGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, maxWidth: 320, margin: "10px auto" },
+    carrilGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, maxWidth: 300, margin: "14px auto" },
+    carrilBtn: { aspectRatio: "1", borderRadius: 12, border: `1px solid ${COL.line}`, background: COL.bg2, fontSize: 34, cursor: "pointer" },
+    carrilBloq: { background: "rgba(255,107,107,.15)", borderColor: COL.danger },
+    pptBtn: { padding: 14, borderRadius: 12, border: `1px solid ${COL.line}`, background: COL.bg2, color: COL.txt, cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 600, textTransform: "capitalize" },
+    finalBox: { maxWidth: 640, margin: "20px auto", background: COL.panel, border: `1px solid ${COL.line}`, borderRadius: 20, padding: 36, textAlign: "center" },
+    finalLegado: { fontFamily: "Anton, sans-serif", fontSize: 28, color: COL.gold, margin: "6px 0" },
+    finalComp: { color: COL.txt2, fontSize: 15, marginBottom: 20 },
+    nemesisBox: { background: COL.bg2, borderRadius: 12, padding: 14, marginBottom: 16, border: `1px solid ${COL.line}` },
+    finalStats: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 },
+    finalStatItem: { background: COL.bg2, borderRadius: 12, padding: "12px 8px", border: `1px solid ${COL.line}` },
+    finalStatNum: { fontFamily: "Anton, sans-serif", fontSize: 26, color: COL.accent },
+    finalStatLbl: { fontSize: 11, color: COL.txt2 },
+    puntajeBox: { background: `linear-gradient(135deg, ${COL.panel2}, ${COL.bg2})`, borderRadius: 16, padding: 20, marginBottom: 16, border: `1px solid ${COL.accent}` },
+    puntajeLbl: { fontSize: 11, letterSpacing: 3, color: COL.txt2 },
+    puntajeNum: { fontFamily: "Anton, sans-serif", fontSize: 52, color: COL.gold, lineHeight: 1 },
+    hitosBox: { background: COL.bg2, borderRadius: 12, padding: 16, marginBottom: 16, textAlign: "left", maxHeight: 180, overflowY: "auto", border: `1px solid ${COL.line}` },
+    vincBox: { background: COL.bg2, borderRadius: 12, padding: 16, marginBottom: 16, textAlign: "left", maxHeight: 160, overflowY: "auto", border: `1px solid ${COL.line}` },
+    vincRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: `1px solid ${COL.line}`, fontSize: 14 },
+    hitosTitle: { fontWeight: 700, marginBottom: 8, fontSize: 14 },
+    hitoLine: { fontSize: 13, color: COL.txt2, lineHeight: 1.6 },
+    finalFlags: { display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 20 },
+    flagChip: { fontSize: 13, padding: "5px 12px", borderRadius: 20, background: COL.panel2, border: `1px solid ${COL.line}` }
+  };
+  var ErrorBoundary = class extends react_shim_default.Component {
+    constructor(props) {
+      super(props);
+      this.state = { error: null };
+    }
+    static getDerivedStateFromError(error) {
+      return { error };
+    }
+    componentDidCatch(error, info) {
+      console.error("Potrero error:", error, info);
+    }
+    render() {
+      if (this.state.error) {
+        return /* @__PURE__ */ react_shim_default.createElement("div", { style: S.wrap }, /* @__PURE__ */ react_shim_default.createElement("style", null, CSS), /* @__PURE__ */ react_shim_default.createElement("div", { style: { ...S.crearBox, textAlign: "center" } }, /* @__PURE__ */ react_shim_default.createElement("h2", { style: S.h2 }, "\u26A0\uFE0F Uh, algo se trab\xF3"), /* @__PURE__ */ react_shim_default.createElement("p", { style: { color: COL.txt2, fontSize: 14 } }, "Hubo un error puntual. Toc\xE1 para volver al juego (tu partida sigue en curso)."), /* @__PURE__ */ react_shim_default.createElement("p", { style: { color: COL.txt2, fontSize: 11, fontFamily: "monospace", background: COL.bg2, padding: 10, borderRadius: 8, overflowX: "auto" } }, String(this.state.error?.message || this.state.error)), /* @__PURE__ */ react_shim_default.createElement("button", { style: S.btnPrimary, onClick: () => this.setState({ error: null }) }, "Reintentar")));
+      }
+      return this.props.children;
+    }
+  };
+  function ElPotrero() {
+    return /* @__PURE__ */ react_shim_default.createElement(ErrorBoundary, null, /* @__PURE__ */ react_shim_default.createElement(ElPotreroGame, null));
+  }
+  return __toCommonJS(build_exports);
+})();
+
+var App = PotreroApp.default;
+var root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(React.createElement(App));
+</script>
+</body>
+</html>
